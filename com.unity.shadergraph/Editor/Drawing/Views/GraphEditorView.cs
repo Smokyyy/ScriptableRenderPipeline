@@ -282,110 +282,113 @@ namespace UnityEditor.ShaderGraph.Drawing
         {
             if(c is RedirectNodeCreationContext context)
             {
-                var nodeData = new RedirectNodeData();
-                nodeData.SetPosition(context.screenMousePosition);
-                
-                // Need to check if the Nodes that are connected are in a group or not
-                // If they are in the same group we also add in the Redirect Node
-                var edgeOutputSlot = context.edge.output.GetSlot();
-                var edgeInputSlot = context.edge.input.GetSlot();
-
-                // Valuetype gets the type should be the type for input and output
-                switch(edgeOutputSlot.valueType)
-                {
-                    case SlotValueType.Boolean:
-                        nodeData.AddSlot(new BooleanMaterialSlot(0, "", "", SlotType.Input, false));
-                        nodeData.AddSlot(new BooleanMaterialSlot(1, "", "", SlotType.Output, false));
-                        break;
-                    case SlotValueType.Vector1:
-                        nodeData.AddSlot(new DynamicVectorMaterialSlot(0, "", "", SlotType.Input, Vector4.zero));
-                        nodeData.AddSlot(new DynamicVectorMaterialSlot(1, "", "", SlotType.Output, Vector4.zero));
-                        break;
-                    case SlotValueType.Vector2:
-                        nodeData.AddSlot(new DynamicVectorMaterialSlot(0, "", "", SlotType.Input, Vector4.zero));
-                        nodeData.AddSlot(new DynamicVectorMaterialSlot(1, "", "", SlotType.Output, Vector4.zero));
-                        break;
-                    case SlotValueType.Vector3:
-                        nodeData.AddSlot(new DynamicVectorMaterialSlot(0, "", "", SlotType.Input, Vector4.zero));
-                        nodeData.AddSlot(new DynamicVectorMaterialSlot(1, "", "", SlotType.Output, Vector4.zero));
-                        break;
-                    case SlotValueType.Vector4:
-                        nodeData.AddSlot(new DynamicVectorMaterialSlot(0, "", "", SlotType.Input, Vector4.zero));
-                        nodeData.AddSlot(new DynamicVectorMaterialSlot(1, "", "", SlotType.Output, Vector4.zero));
-                        break;
-                    case SlotValueType.Matrix2:
-                        nodeData.AddSlot(new DynamicMatrixMaterialSlot(0, "", "", SlotType.Input));
-                        nodeData.AddSlot(new DynamicMatrixMaterialSlot(1, "", "", SlotType.Output));
-                        break;
-                    case SlotValueType.Matrix3:
-                        nodeData.AddSlot(new DynamicMatrixMaterialSlot(0, "", "", SlotType.Input));
-                        nodeData.AddSlot(new DynamicMatrixMaterialSlot(1, "", "", SlotType.Output));
-                        break;
-                    case SlotValueType.Matrix4:
-                        nodeData.AddSlot(new DynamicMatrixMaterialSlot(0, "", "", SlotType.Input));
-                        nodeData.AddSlot(new DynamicMatrixMaterialSlot(1, "", "", SlotType.Output));
-                        break;
-                    case SlotValueType.Texture2D:
-                        nodeData.AddSlot(new Texture2DMaterialSlot(0, "", "", SlotType.Input));
-                        nodeData.AddSlot(new Texture2DMaterialSlot(1, "", "", SlotType.Output));
-                        break;
-                    case SlotValueType.Texture2DArray:
-                        nodeData.AddSlot(new Texture2DArrayMaterialSlot(0, "", "", SlotType.Input));
-                        nodeData.AddSlot(new Texture2DArrayMaterialSlot(1, "", "", SlotType.Output));
-                        break;
-                    case SlotValueType.Texture3D:
-                        nodeData.AddSlot(new Texture3DMaterialSlot(0, "", "", SlotType.Input));
-                        nodeData.AddSlot(new Texture3DMaterialSlot(1, "", "", SlotType.Output));
-                        break;
-                    case SlotValueType.Cubemap:
-                        nodeData.AddSlot(new CubemapMaterialSlot(0, "", "", SlotType.Input));
-                        nodeData.AddSlot(new CubemapMaterialSlot(1, "", "", SlotType.Output));
-                        break;
-                    case SlotValueType.SamplerState:
-                        nodeData.AddSlot(new SamplerStateMaterialSlot(0, "", "", SlotType.Input));
-                        nodeData.AddSlot(new SamplerStateMaterialSlot(1, "", "", SlotType.Output));
-                        break;
-                    case SlotValueType.Gradient:
-                        nodeData.AddSlot(new GradientMaterialSlot(0, "", "", SlotType.Input));
-                        nodeData.AddSlot(new GradientMaterialSlot(1, "", "", SlotType.Output));
-                        break;
-                    case SlotValueType.Dynamic:
-                        nodeData.AddSlot(new DynamicValueMaterialSlot(0, "", "", SlotType.Input, Matrix4x4.zero));
-                        nodeData.AddSlot(new DynamicValueMaterialSlot(1, "", "", SlotType.Output, Matrix4x4.zero));
-                        break;
-                    case SlotValueType.DynamicMatrix:
-                        nodeData.AddSlot(new DynamicMatrixMaterialSlot(0, "", "", SlotType.Input));
-                        nodeData.AddSlot(new DynamicMatrixMaterialSlot(1, "", "", SlotType.Output));
-                        break;
-                    case SlotValueType.DynamicVector:
-                        nodeData.AddSlot(new DynamicVectorMaterialSlot(0, "", "", SlotType.Input, Vector4.zero));
-                        nodeData.AddSlot(new DynamicVectorMaterialSlot(1, "", "", SlotType.Output, Vector4.zero));
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-
-                var groupGuidOutputNode = m_Graph.GetNodeFromGuid(edgeOutputSlot.slotReference.nodeGuid).groupGuid;
-                var groupGuidInputNode = m_Graph.GetNodeFromGuid(edgeInputSlot.slotReference.nodeGuid).groupGuid;
-                if (groupGuidOutputNode == groupGuidInputNode)
-                {
-                    nodeData.groupGuid = groupGuidOutputNode;
-                }
-
-                var edgeOutSlotRef = edgeOutputSlot.owner.GetSlotReference(edgeOutputSlot.id);
-                var edgeInSlotRef = edgeInputSlot.owner.GetSlotReference(edgeInputSlot.id);
-
-                // Hard-coded for single input-output. Changes would be needed for multi-input redirects
-                var nodeInSlotRef = nodeData.GetSlotReference(0);
-                var nodeOutSlotRef = nodeData.GetSlotReference(1);
-
-                m_Graph.owner.RegisterCompleteObjectUndo("Add Redirect Node");
-                m_Graph.AddNode(nodeData);
-
-                m_Graph.Connect(edgeOutSlotRef, nodeInSlotRef);
-                m_Graph.Connect(nodeOutSlotRef, edgeInSlotRef);
-
-                return;
+                // var nodeData = new RedirectNodeData();
+                //
+                // //position = contentViewContainer.WorldToLocal(position);
+                // //var pos = m_GraphView.contentContainer.WorldToLocal(context.screenMousePosition);
+                // nodeData.SetPosition(context.screenMousePosition);
+                //
+                // // Need to check if the Nodes that are connected are in a group or not
+                // // If they are in the same group we also add in the Redirect Node
+                // var edgeOutputSlot = context.edge.output.GetSlot();
+                // var edgeInputSlot = context.edge.input.GetSlot();
+                //
+                // // Valuetype gets the type should be the type for input and output
+                // switch(edgeOutputSlot.valueType)
+                // {
+                //     case SlotValueType.Boolean:
+                //         nodeData.AddSlot(new BooleanMaterialSlot(0, "", "", SlotType.Input, false));
+                //         nodeData.AddSlot(new BooleanMaterialSlot(1, "", "", SlotType.Output, false));
+                //         break;
+                //     case SlotValueType.Vector1:
+                //         nodeData.AddSlot(new DynamicVectorMaterialSlot(0, "", "", SlotType.Input, Vector4.zero));
+                //         nodeData.AddSlot(new DynamicVectorMaterialSlot(1, "", "", SlotType.Output, Vector4.zero));
+                //         break;
+                //     case SlotValueType.Vector2:
+                //         nodeData.AddSlot(new DynamicVectorMaterialSlot(0, "", "", SlotType.Input, Vector4.zero));
+                //         nodeData.AddSlot(new DynamicVectorMaterialSlot(1, "", "", SlotType.Output, Vector4.zero));
+                //         break;
+                //     case SlotValueType.Vector3:
+                //         nodeData.AddSlot(new DynamicVectorMaterialSlot(0, "", "", SlotType.Input, Vector4.zero));
+                //         nodeData.AddSlot(new DynamicVectorMaterialSlot(1, "", "", SlotType.Output, Vector4.zero));
+                //         break;
+                //     case SlotValueType.Vector4:
+                //         nodeData.AddSlot(new DynamicVectorMaterialSlot(0, "", "", SlotType.Input, Vector4.zero));
+                //         nodeData.AddSlot(new DynamicVectorMaterialSlot(1, "", "", SlotType.Output, Vector4.zero));
+                //         break;
+                //     case SlotValueType.Matrix2:
+                //         nodeData.AddSlot(new DynamicMatrixMaterialSlot(0, "", "", SlotType.Input));
+                //         nodeData.AddSlot(new DynamicMatrixMaterialSlot(1, "", "", SlotType.Output));
+                //         break;
+                //     case SlotValueType.Matrix3:
+                //         nodeData.AddSlot(new DynamicMatrixMaterialSlot(0, "", "", SlotType.Input));
+                //         nodeData.AddSlot(new DynamicMatrixMaterialSlot(1, "", "", SlotType.Output));
+                //         break;
+                //     case SlotValueType.Matrix4:
+                //         nodeData.AddSlot(new DynamicMatrixMaterialSlot(0, "", "", SlotType.Input));
+                //         nodeData.AddSlot(new DynamicMatrixMaterialSlot(1, "", "", SlotType.Output));
+                //         break;
+                //     case SlotValueType.Texture2D:
+                //         nodeData.AddSlot(new Texture2DMaterialSlot(0, "", "", SlotType.Input));
+                //         nodeData.AddSlot(new Texture2DMaterialSlot(1, "", "", SlotType.Output));
+                //         break;
+                //     case SlotValueType.Texture2DArray:
+                //         nodeData.AddSlot(new Texture2DArrayMaterialSlot(0, "", "", SlotType.Input));
+                //         nodeData.AddSlot(new Texture2DArrayMaterialSlot(1, "", "", SlotType.Output));
+                //         break;
+                //     case SlotValueType.Texture3D:
+                //         nodeData.AddSlot(new Texture3DMaterialSlot(0, "", "", SlotType.Input));
+                //         nodeData.AddSlot(new Texture3DMaterialSlot(1, "", "", SlotType.Output));
+                //         break;
+                //     case SlotValueType.Cubemap:
+                //         nodeData.AddSlot(new CubemapMaterialSlot(0, "", "", SlotType.Input));
+                //         nodeData.AddSlot(new CubemapMaterialSlot(1, "", "", SlotType.Output));
+                //         break;
+                //     case SlotValueType.SamplerState:
+                //         nodeData.AddSlot(new SamplerStateMaterialSlot(0, "", "", SlotType.Input));
+                //         nodeData.AddSlot(new SamplerStateMaterialSlot(1, "", "", SlotType.Output));
+                //         break;
+                //     case SlotValueType.Gradient:
+                //         nodeData.AddSlot(new GradientMaterialSlot(0, "", "", SlotType.Input));
+                //         nodeData.AddSlot(new GradientMaterialSlot(1, "", "", SlotType.Output));
+                //         break;
+                //     case SlotValueType.Dynamic:
+                //         nodeData.AddSlot(new DynamicValueMaterialSlot(0, "", "", SlotType.Input, Matrix4x4.zero));
+                //         nodeData.AddSlot(new DynamicValueMaterialSlot(1, "", "", SlotType.Output, Matrix4x4.zero));
+                //         break;
+                //     case SlotValueType.DynamicMatrix:
+                //         nodeData.AddSlot(new DynamicMatrixMaterialSlot(0, "", "", SlotType.Input));
+                //         nodeData.AddSlot(new DynamicMatrixMaterialSlot(1, "", "", SlotType.Output));
+                //         break;
+                //     case SlotValueType.DynamicVector:
+                //         nodeData.AddSlot(new DynamicVectorMaterialSlot(0, "", "", SlotType.Input, Vector4.zero));
+                //         nodeData.AddSlot(new DynamicVectorMaterialSlot(1, "", "", SlotType.Output, Vector4.zero));
+                //         break;
+                //     default:
+                //         throw new ArgumentOutOfRangeException();
+                // }
+                //
+                // var groupGuidOutputNode = m_Graph.GetNodeFromGuid(edgeOutputSlot.slotReference.nodeGuid).groupGuid;
+                // var groupGuidInputNode = m_Graph.GetNodeFromGuid(edgeInputSlot.slotReference.nodeGuid).groupGuid;
+                // if (groupGuidOutputNode == groupGuidInputNode)
+                // {
+                //     nodeData.groupGuid = groupGuidOutputNode;
+                // }
+                //
+                // var edgeOutSlotRef = edgeOutputSlot.owner.GetSlotReference(edgeOutputSlot.id);
+                // var edgeInSlotRef = edgeInputSlot.owner.GetSlotReference(edgeInputSlot.id);
+                //
+                // // Hard-coded for single input-output. Changes would be needed for multi-input redirects
+                // var nodeInSlotRef = nodeData.GetSlotReference(0);
+                // var nodeOutSlotRef = nodeData.GetSlotReference(1);
+                //
+                // m_Graph.owner.RegisterCompleteObjectUndo("Add Redirect Node");
+                // m_Graph.AddNode(nodeData);
+                //
+                // m_Graph.Connect(edgeOutSlotRef, nodeInSlotRef);
+                // m_Graph.Connect(nodeOutSlotRef, edgeInSlotRef);
+                //
+                // return;
             }
 
             m_SearchWindowProvider.connectedPort = null;
@@ -1022,6 +1025,9 @@ namespace UnityEditor.ShaderGraph.Drawing
                     output = sourceAnchor,
                     input = targetAnchor
                 };
+                //var edgeManip = new EdgeManipulator();
+                //edgeManip.target.RegisterCallback<MouseDownEvent>(OnMouseDown);
+                //edgeView.AddManipulator(new EdgeManipulator());
                 edgeView.output.Connect(edgeView);
                 edgeView.input.Connect(edgeView);
                 m_GraphView.AddElement(edgeView);
@@ -1035,6 +1041,8 @@ namespace UnityEditor.ShaderGraph.Drawing
 
             return null;
         }
+
+
 
         Stack<Node> m_NodeStack = new Stack<Node>();
 

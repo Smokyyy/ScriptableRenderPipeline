@@ -7,16 +7,23 @@ using UnityEditor.Graphing;
 using UnityEditor.ShaderGraph.Drawing;
 using UnityEditor.Experimental.GraphView;
 using UnityEditor.Rendering;
+//using Edge = UnityEditor.Experimental.GraphView.Edge;
 
 namespace UnityEditor.ShaderGraph
 {
+    // public class RedirectNodeCreationContext : NodeCreationContext
+    // {
+    //     public Edge edge;
+    // }
+
     class RedirectNodeView : RedirectNode, IShaderNodeView
     {
         IEdgeConnectorListener m_ConnectorListener;
 
-        public RedirectNodeView() : base()
-        {
-        }
+        // public RedirectNodeView() : base()
+        // {
+        //     //styleSheets.Add(Resources.Load<StyleSheet>("Styles/RedirectNode"));
+        // }
 
         // Tie the nodeView to its data
         public void ConnectToData(AbstractMaterialNode inNode, IEdgeConnectorListener connectorListener)
