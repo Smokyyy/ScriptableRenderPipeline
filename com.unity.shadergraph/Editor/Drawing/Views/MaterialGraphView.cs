@@ -31,8 +31,6 @@ namespace UnityEditor.ShaderGraph.Drawing
             RegisterCallback<DragUpdatedEvent>(OnDragUpdatedEvent);
             RegisterCallback<DragPerformEvent>(OnDragPerformEvent);
             RegisterCallback<MouseMoveEvent>(OnMouseMoveEvent);
-            RegisterCallback<MouseDownEvent>(OnMouseDown);
-            //new EdgeManipulator();
         }
 
         protected override bool canCopySelection
@@ -220,52 +218,18 @@ namespace UnityEditor.ShaderGraph.Drawing
             if (evt.target is Edge)
             {
                 var target = evt.target as Edge;
-                //var pos = contentViewContainer.WorldToLocal(evt.mousePosition);
                 var pos = evt.mousePosition;
 
                 evt.menu.AppendSeparator();
                 evt.menu.AppendAction("Add Redirect Node", e => CreateRedirectNode(pos, target));
-                //evt.menu.AppendAction("Add Redirect Node", e => nodeCreationRequest(new RedirectNodeCreationContext { screenMousePosition = pos, target = null, index = -1, edge = target }));
             }
         }
 
-        // // Contextual menu
-        // if (evt.target is Edge && CanUseRedirect())
-        // {
-        //     var target = evt.target as Edge;
-        //     var pos = contentViewContainer.WorldToLocal(evt.mousePosition);
-        //
-        //     evt.menu.AppendSeparator();
-        //     evt.menu.AppendAction("Add Redirect Node", e => nodeCreationRequest(new RedirectNodeCreationContext() { screenMousePosition = pos, target = null, index = -1, edge = target }));
-        // }
-
-        void OnMouseDown(MouseDownEvent evt)
-        {
-            // Create Redirect Node in-edge on double click
-            if (evt.button == (int)MouseButton.LeftMouse && evt.clickCount == 2)
-            {
-                Debug.Log(evt.target);
-                if (evt.target is Edge edgeTarget)
-                {
-                    //Vector2 pos = contentViewContainer.WorldToLocal(evt.localMousePosition);
-                    Vector2 pos = evt.mousePosition;
-
-
-                    CreateRedirectNode(pos, edgeTarget);
-
-                    //nodeCreationRequest(new RedirectNodeCreationContext { screenMousePosition = pos, target = null, index = -1, edge = edgeTarget });
-                }
-            }
-        }
-
-        void CreateRedirectNode(Vector2 position, Edge edgeTarget)
+        public void CreateRedirectNode(Vector2 position, Edge edgeTarget)
         {
             var nodeData = new RedirectNodeData();
-
             position = contentViewContainer.WorldToLocal(position);
-            //var pos = m_GraphView.contentContainer.WorldToLocal(context.screenMousePosition);
 
-            // Dont set it here...
             nodeData.SetPosition(position);
 
             // Need to check if the Nodes that are connected are in a group or not

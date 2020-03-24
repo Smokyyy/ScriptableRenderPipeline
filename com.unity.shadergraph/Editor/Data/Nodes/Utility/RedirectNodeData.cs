@@ -8,24 +8,10 @@ namespace UnityEditor.ShaderGraph
 {
     class RedirectNodeData : AbstractMaterialNode
     {
-        // //[SerializeField]
-        // Rect m_Position;
-        //
-        // public Rect position
-        // {
-        //     get => m_Position;
-        //     set => m_Position = value;
-        // }
-
-
-        //public RedirectNodeData(Vector2 position)
         public RedirectNodeData()
         {
             name = "Redirect Node";
-            //m_Position = new Rect(position, Vector2.zero);
         }
-
-
 
         public void SetPosition(Vector2 pos)
         {

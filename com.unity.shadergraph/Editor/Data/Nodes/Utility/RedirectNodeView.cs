@@ -11,19 +11,9 @@ using UnityEditor.Rendering;
 
 namespace UnityEditor.ShaderGraph
 {
-    // public class RedirectNodeCreationContext : NodeCreationContext
-    // {
-    //     public Edge edge;
-    // }
-
     class RedirectNodeView : RedirectNode, IShaderNodeView
     {
         IEdgeConnectorListener m_ConnectorListener;
-
-        // public RedirectNodeView() : base()
-        // {
-        //     //styleSheets.Add(Resources.Load<StyleSheet>("Styles/RedirectNode"));
-        // }
 
         // Tie the nodeView to its data
         public void ConnectToData(AbstractMaterialNode inNode, IEdgeConnectorListener connectorListener)
