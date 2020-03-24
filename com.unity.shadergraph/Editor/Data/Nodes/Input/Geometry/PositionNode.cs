@@ -21,7 +21,6 @@ namespace UnityEditor.ShaderGraph
         {
             name = "Position";
             precision = Precision.Float;
-            nodeVersion = 1;
             UpdateNodeAfterDeserialization();
         }
 
