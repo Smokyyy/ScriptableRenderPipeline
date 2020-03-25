@@ -185,6 +185,17 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Random.hlsl"
 
 // ----------------------------------------------------------------------------
+// Macros that override the register local for constnat buffers (for ray tracing mainly)
+// ----------------------------------------------------------------------------
+#if (SHADER_STAGE_RAY_TRACING && UNITY_RAY_TRACING_GLOBAL_RESOURCES)
+    #define GLOBAL_RESOURCE(type, name, reg) type name : register(reg, space1);
+    #define GLOBAL_CBUFFER_START(name, reg) cbuffer name : register(reg, space1) {
+#else
+    #define GLOBAL_RESOURCE(type, name, reg) type name;
+    #define GLOBAL_CBUFFER_START(name, reg) CBUFFER_START(name)
+#endif
+
+// ----------------------------------------------------------------------------
 // Common intrinsic (general implementation of intrinsic available on some platform)
 // ----------------------------------------------------------------------------
 
@@ -1128,5 +1139,13 @@ uint GetStencilValue(uint2 stencilBufferVal)
     return stencilBufferVal.x;
 #endif
 } 
+
+// Sharpens the alpha of a texture to the width of a single pixel
+// Used for alpha to coverage
+// source: https://medium.com/@bgolus/anti-aliased-alpha-test-the-esoteric-alpha-to-coverage-8b177335ae4f
+float SharpenAlpha(float alpha, float alphaClipTreshold)
+{
+    return saturate((alpha - alphaClipTreshold) / max(fwidth(alpha), 0.0001) + 0.5);
+}
 
 #endif // UNITY_COMMON_INCLUDED

@@ -70,8 +70,7 @@ void Frag(  PackedVaryingsToPS packedInput
 
     #ifdef _ALPHATOMASK_ON
     // Alpha channel is used for alpha to coverage
-    // source: https://medium.com/@bgolus/anti-aliased-alpha-test-the-esoteric-alpha-to-coverage
-    depthColor.a = saturate((builtinData.opacity - builtinData.alphaClipTreshold) / max(fwidth(builtinData.opacity), 0.0001) + 0.5);
+    depthColor.a = SharpenAlpha(builtinData.opacity, builtinData.alphaClipTreshold);
     #endif
 #endif
 
