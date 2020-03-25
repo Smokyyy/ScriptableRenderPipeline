@@ -41,7 +41,7 @@ Shader "Hidden/Universal Render Pipeline/BokehDepthOfField"
 
             uint w;
             uint h;
-#if defined(UNITY_SINGLE_PASS_STEREO) || defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
+#if defined(UNITY_STEREO_INSTANCING_ENABLED) || defined(UNITY_STEREO_MULTIVIEW_ENABLED)
             uint x;
             _CameraDepthTexture.GetDimensions(w, h, x);
 #else
