@@ -41,7 +41,12 @@ Shader "Hidden/Universal Render Pipeline/BokehDepthOfField"
 
             uint w;
             uint h;
+#if (defined(UNITY_SINGLE_PASS_STEREO) || defined(UNITY_STEREO_INSTANCING_ENABLED))
+            uint x;
+            _CameraDepthTexture.GetDimensions(w, h, x);
+#else
             _CameraDepthTexture.GetDimensions(w, h);
+#endif
 
             float2 uv = UnityStereoTransformScreenSpaceTex(input.uv);
             float depth = LOAD_TEXTURE2D_X(_CameraDepthTexture, float2(w, h) * uv).x;
