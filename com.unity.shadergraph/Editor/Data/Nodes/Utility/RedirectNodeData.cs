@@ -46,7 +46,7 @@ namespace UnityEditor.ShaderGraph
 
             if(noInputs && !noOutputs)
             {
-                owner.AddValidationError(tempId, "Node has no inputs and default value will be 0.", ShaderCompilerMessageSeverity.Warning);
+                owner.AddValidationError(guid, "Node has no inputs and default value will be 0.", ShaderCompilerMessageSeverity.Warning);
             }
         }
     }

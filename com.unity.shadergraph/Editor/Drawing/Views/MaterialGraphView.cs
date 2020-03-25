@@ -483,7 +483,6 @@ namespace UnityEditor.ShaderGraph.Drawing
             graph.AddStickyNote(stickyNoteData);
         }
 
-
         public void RemoveFromGroupNode()
         {
             graph.owner.RegisterCompleteObjectUndo("Ungroup Node(s)");

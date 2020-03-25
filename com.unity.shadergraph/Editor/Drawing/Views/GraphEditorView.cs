@@ -442,10 +442,7 @@ namespace UnityEditor.ShaderGraph.Drawing
 
             foreach (var node in nodesToUpdate)
             {
-                //if (node is MaterialNodeView materialNodeView)
-                //{
-                    node.OnModified(ModificationScope.Topological);
-                //}
+                node.OnModified(ModificationScope.Topological);
             }
 
             UpdateEdgeColors(nodesToUpdate);
@@ -703,10 +700,7 @@ namespace UnityEditor.ShaderGraph.Drawing
 
             foreach (var node in nodesToUpdate)
             {
-                //if (node is MaterialNodeView materialNodeView)
-                //{
-                    node.OnModified(ModificationScope.Topological);
-                //}
+                node.OnModified(ModificationScope.Topological);
             }
 
             UpdateEdgeColors(nodesToUpdate);
@@ -741,13 +735,10 @@ namespace UnityEditor.ShaderGraph.Drawing
 
                 if (!(m_GraphView.GetNodeByGuid(node.guid.ToString()) is IShaderNodeView nodeView))
                     continue;
-                //if (!(m_GraphView.GetNodeByGuid(node.guid.ToString()) is MaterialNodeView nodeView))
-                //    continue;
 
                 if (messageData.Value.Count == 0)
                 {
                     var badge = nodeView.gvNode.Q<IconBadge>();
-                    //var badge = nodeView.Q<IconBadge>();
                     badge?.Detach();
                     badge?.RemoveFromHierarchy();
                 }
@@ -1031,14 +1022,7 @@ namespace UnityEditor.ShaderGraph.Drawing
             // Set the processed blackboard layout.
             m_BlackboardProvider.blackboard.SetPosition(blackboardRect);
 
-            if (!float.IsNaN(m_FloatingWindowsLayout.masterPreviewSize.x) && !float.IsNaN(m_FloatingWindowsLayout.masterPreviewSize.y))
-            {
-                previewManager.ResizeMasterPreview(m_FloatingWindowsLayout.masterPreviewSize);
-            }
-            else
-            {
-                Debug.Log("IS A NAAAAAAAAAAAAAAAAAAAAAAAAAAN");
-            }
+            previewManager.ResizeMasterPreview(m_FloatingWindowsLayout.masterPreviewSize);
 
             // After the layout is restored from the previous session, start tracking layout changes in the blackboard.
             m_BlackboardProvider.blackboard.RegisterCallback<GeometryChangedEvent>(StoreBlackboardLayoutOnGeometryChanged);
@@ -1064,11 +1048,7 @@ namespace UnityEditor.ShaderGraph.Drawing
 
             if (m_MasterPreviewView.expanded)
             {
-                var newSize = m_MasterPreviewView.previewTextureView.layout.size;
-                if (!float.IsNaN(newSize.x) && !float.IsNaN(newSize.y))
-                {
-                    m_FloatingWindowsLayout.masterPreviewSize = m_MasterPreviewView.previewTextureView.layout.size;
-                }
+                m_FloatingWindowsLayout.masterPreviewSize = m_MasterPreviewView.previewTextureView.layout.size;
             }
 
             string serializedWindowLayout = JsonUtility.ToJson(m_FloatingWindowsLayout);
