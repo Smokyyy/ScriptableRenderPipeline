@@ -973,7 +973,7 @@ namespace UnityEngine.Rendering.HighDefinition
             return camera.nonObliqueProjMatrix * s_FlipMatrixLHSRHS;
         }
 
-        Vector3 GetLightColor(VisibleLight light)
+        internal static Vector3 GetLightColor(VisibleLight light)
         {
             return new Vector3(light.finalColor.r, light.finalColor.g, light.finalColor.b);
         }
@@ -1148,7 +1148,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             lightData.shadowDimmer           = additionalLightData.shadowDimmer;
             lightData.volumetricShadowDimmer = additionalLightData.volumetricShadowDimmer;
-            GetContactShadowMask(additionalLightData, HDAdditionalLightData.ScalableSettings.UseContactShadow(m_Asset), hdCamera, ref lightData.contactShadowMask,ref lightData.isRayTracedContactShadow);
+            GetContactShadowMask(additionalLightData, HDAdditionalLightData.ScalableSettings.UseContactShadow(m_Asset), hdCamera, true, ref lightData.contactShadowMask,ref lightData.isRayTracedContactShadow);
 
             // We want to have a colored penumbra if the flag is on and the color is not gray
             bool penumbraTint = additionalLightData.penumbraTint && ((additionalLightData.shadowTint.r != additionalLightData.shadowTint.g) || (additionalLightData.shadowTint.g != additionalLightData.shadowTint.b));
@@ -1249,14 +1249,11 @@ namespace UnityEngine.Rendering.HighDefinition
         }
 
         internal void GetLightData(CommandBuffer cmd, HDCamera hdCamera, HDShadowSettings shadowSettings, VisibleLight light, Light lightComponent,
-            int lightIndex, int shadowIndex, ref Vector3 lightDimensions, DebugDisplaySettings debugDisplaySettings, ref int screenSpaceShadowIndex, ref int screenSpaceChannelSlot)
+            ProcessedLightData processedData, int shadowIndex, bool isRasterization, ref Vector3 lightDimensions, DebugDisplaySettings debugDisplaySettings, ref int screenSpaceShadowIndex, ref int screenSpaceChannelSlot, ref LightData lightData)
         {
-            var processedData = m_ProcessedLightData[lightIndex];
             var additionalLightData = processedData.additionalLightData;
             var gpuLightType = processedData.gpuLightType;
             var lightType = processedData.lightType;
-
-            var lightData = new LightData();
 
             lightData.lightLayers = additionalLightData.GetLightLayers();
 
@@ -1430,7 +1427,7 @@ namespace UnityEngine.Rendering.HighDefinition
             float shadowDistanceFade         = HDUtils.ComputeLinearDistanceFade(processedData.distanceToCamera, Mathf.Min(shadowSettings.maxShadowDistance.value, additionalLightData.shadowFadeDistance));
             lightData.shadowDimmer           = shadowDistanceFade * additionalLightData.shadowDimmer;
             lightData.volumetricShadowDimmer = shadowDistanceFade * additionalLightData.volumetricShadowDimmer;
-            GetContactShadowMask(additionalLightData, HDAdditionalLightData.ScalableSettings.UseContactShadow(m_Asset), hdCamera, ref lightData.contactShadowMask, ref lightData.isRayTracedContactShadow);
+            GetContactShadowMask(additionalLightData, HDAdditionalLightData.ScalableSettings.UseContactShadow(m_Asset), hdCamera, isRasterization, ref lightData.contactShadowMask, ref lightData.isRayTracedContactShadow);
 
             // We want to have a colored penumbra if the flag is on and the color is not gray
             bool penumbraTint = additionalLightData.penumbraTint && ((additionalLightData.shadowTint.r != additionalLightData.shadowTint.g) || (additionalLightData.shadowTint.g != additionalLightData.shadowTint.b));
@@ -1443,7 +1440,8 @@ namespace UnityEngine.Rendering.HighDefinition
             // If there is still a free slot in the screen space shadow array and this needs to render a screen space shadow
             if (hdCamera.frameSettings.IsEnabled(FrameSettingsField.RayTracing)
                 && EnoughScreenSpaceShadowSlots(lightData.lightType, screenSpaceChannelSlot)
-                && additionalLightData.WillRenderScreenSpaceShadow())
+                && additionalLightData.WillRenderScreenSpaceShadow()
+                && isRasterization)
             {
                 if (lightData.lightType == GPULightType.Rectangle)
                 {
@@ -1476,13 +1474,18 @@ namespace UnityEngine.Rendering.HighDefinition
             }
 
             lightData.shadowIndex = shadowIndex;
-            // Keep track of the shadow map (for indirect lighting and transparents)
-            additionalLightData.shadowIndex = shadowIndex;
+
+            if (isRasterization)
+            {
+                // Keep track of the shadow map (for indirect lighting and transparents)
+                additionalLightData.shadowIndex = shadowIndex;
+            }
+
 
             //Value of max smoothness is derived from Radius. Formula results from eyeballing. Radius of 0 results in 1 and radius of 2.5 results in 0.
-            float maxSmoothness = Mathf.Clamp01(1.1725f / (1.01f + Mathf.Pow(1.0f * (additionalLightData.shapeRadius + 0.1f), 2f)) - 0.15f);
+            //float maxSmoothness = Mathf.Clamp01(1.1725f / (1.01f + Mathf.Pow(1.0f * (additionalLightData.shapeRadius + 0.1f), 2f)) - 0.15f);
             // Value of max smoothness is from artists point of view, need to convert from perceptual smoothness to roughness
-            lightData.minRoughness = (1.0f - maxSmoothness) * (1.0f - maxSmoothness);
+            //lightData.minRoughness = (1.0f - maxSmoothness) * (1.0f - maxSmoothness);
 
             lightData.shadowMaskSelector = Vector4.zero;
 
@@ -1497,8 +1500,6 @@ namespace UnityEngine.Rendering.HighDefinition
                 lightData.shadowMaskSelector.x = -1.0f;
                 lightData.nonLightMappedOnly = 0;
             }
-
-            m_lightList.lights.Add(lightData);
         }
 
         // TODO: we should be able to do this calculation only with LightData without VisibleLight light, but for now pass both
@@ -1915,7 +1916,7 @@ namespace UnityEngine.Rendering.HighDefinition
             cullingParams.cullingOptions |= CullingOptions.DisablePerObjectCulling;
         }
 
-        bool IsBakedShadowMaskLight(Light light)
+        internal static bool IsBakedShadowMaskLight(Light light)
         {
             // This can happen for particle lights.
             if (light == null)
@@ -2227,8 +2228,14 @@ namespace UnityEngine.Rendering.HighDefinition
                 {
                     Vector3 lightDimensions = new Vector3(); // X = length or width, Y = height, Z = range (depth)
 
+                    // Allocate a light data
+                    LightData lightData = new LightData();
+                    
                     // Punctual, area, projector lights - the rendering side.
-                    GetLightData(cmd, hdCamera, hdShadowSettings, light, lightComponent, lightIndex, shadowIndex, ref lightDimensions, debugDisplaySettings, ref m_ScreenSpaceShadowIndex, ref m_ScreenSpaceShadowChannelSlot);
+                    GetLightData(cmd, hdCamera, hdShadowSettings, light, lightComponent, m_ProcessedLightData[lightIndex], shadowIndex, true, ref lightDimensions, debugDisplaySettings, ref m_ScreenSpaceShadowIndex, ref m_ScreenSpaceShadowChannelSlot, ref lightData);
+
+                    // Add the previously created light data
+                    m_lightList.lights.Add(lightData);
 
                     switch (lightCategory)
                     {
@@ -2256,7 +2263,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     {
                         // Caution: 'LightData.positionWS' is camera-relative after this point.
                         int last = m_lightList.lights.Count - 1;
-                        LightData lightData = m_lightList.lights[last];
+                        lightData = m_lightList.lights[last];
                         lightData.positionRWS -= camPosWS;
                         m_lightList.lights[last] = lightData;
                     }
@@ -2495,10 +2502,21 @@ namespace UnityEngine.Rendering.HighDefinition
                 if (cullResults.visibleLights.Length != 0)
                 {
                     int processedLightCount = PreprocessVisibleLights(hdCamera, cullResults, debugDisplaySettings, aovRequest);
+
+                    // In case ray tracing supported and a light cluster is built, we need to make sure to reserve all the cookie slots we need
+                    if (m_RayTracingSupported)
+                        ReserveRayTracingCookieAtlasSlots();
+
                     PrepareGPULightdata(cmd, hdCamera, cullResults, processedLightCount);
 
                     // Update the compute buffer with the shadow request datas
                     m_ShadowManager.PrepareGPUShadowDatas(cullResults, hdCamera);
+                }
+                else if (m_RayTracingSupported)
+                {
+                    // In case there is no rasterization lights, we stil need to do it for ray tracing
+                    ReserveRayTracingCookieAtlasSlots();
+                    m_TextureCaches.lightCookieManager.LayoutIfNeeded();
                 }
 
                 if (cullResults.visibleReflectionProbes.Length != 0 || hdProbeCullingResults.visibleProbes.Count != 0)
@@ -2599,7 +2617,15 @@ namespace UnityEngine.Rendering.HighDefinition
             }
         }
 
-        internal void UpdateEnvLighCameraRelativetData(ref EnvLightData envLightData, Vector3 camPosWS)
+        internal static void UpdateLightCameraRelativetData(ref LightData lightData, Vector3 camPosWS)
+        {
+            if (ShaderConfig.s_CameraRelativeRendering != 0)
+            {
+                lightData.positionRWS -= camPosWS;
+            }
+        }
+
+        internal static void UpdateEnvLighCameraRelativetData(ref EnvLightData envLightData, Vector3 camPosWS)
         {
             if (ShaderConfig.s_CameraRelativeRendering != 0)
             {
@@ -3360,13 +3386,15 @@ namespace UnityEngine.Rendering.HighDefinition
 
         // The first rendered 24 lights that have contact shadow enabled have a mask used to select the bit that contains
         // the contact shadow shadowed information (occluded or not). Otherwise -1 is written
-        void GetContactShadowMask(HDAdditionalLightData hdAdditionalLightData, BoolScalableSetting contactShadowEnabled, HDCamera hdCamera, ref int contactShadowMask, ref float rayTracingShadowFlag)
+        void GetContactShadowMask(HDAdditionalLightData hdAdditionalLightData, BoolScalableSetting contactShadowEnabled, HDCamera hdCamera, bool isRasterization, ref int contactShadowMask, ref float rayTracingShadowFlag)
         {
             contactShadowMask = 0;
             rayTracingShadowFlag = 0.0f;
             // If contact shadows are not enabled or we already reached the manimal number of contact shadows
+            // or this is not rasterization
             if ((!hdAdditionalLightData.useContactShadow.Value(contactShadowEnabled))
-                || m_ContactShadowIndex >= LightDefinitions.s_LightListMaxPrunedEntries)
+                || m_ContactShadowIndex >= LightDefinitions.s_LightListMaxPrunedEntries
+                || !isRasterization)
                 return;
 
             // Evaluate the contact shadow index of this light
