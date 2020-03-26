@@ -86,6 +86,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 cmd.SetGlobalFloat("_HDREmulationScale", m_Renderer2DData.hdrEmulationScale);
                 cmd.SetGlobalFloat("_InverseHDREmulationScale", 1.0f / m_Renderer2DData.hdrEmulationScale);
                 cmd.SetGlobalFloat("_UseSceneLighting", isLitView ? 1.0f : 0.0f);
+                cmd.SetGlobalColor("_RendererColor", Color.white);
                 RendererLighting.SetShapeLightShaderGlobals(cmd);
 
                 context.ExecuteCommandBuffer(cmd);
@@ -183,6 +184,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
                 cmd.SetGlobalTexture("_ShapeLightTexture2", Texture2D.blackTexture);
                 cmd.SetGlobalTexture("_ShapeLightTexture3", Texture2D.blackTexture);
                 cmd.SetGlobalFloat("_UseSceneLighting", isLitView ? 1.0f : 0.0f);
+                cmd.SetGlobalColor("_RendererColor", Color.white);
                 cmd.EnableShaderKeyword("USE_SHAPE_LIGHT_TYPE_0");
                 context.ExecuteCommandBuffer(cmd);
                 CommandBufferPool.Release(cmd);
