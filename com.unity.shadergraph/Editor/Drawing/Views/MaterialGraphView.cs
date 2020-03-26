@@ -232,9 +232,7 @@ namespace UnityEditor.ShaderGraph.Drawing
             position = contentViewContainer.WorldToLocal(position);
 
             nodeData.SetPosition(position);
-
-            // Need to check if the Nodes that are connected are in a group or not
-            // If they are in the same group we also add in the Redirect Node
+            
             var edgeOutputSlot = edgeTarget.output.GetSlot();
             var edgeInputSlot = edgeTarget.input.GetSlot();
 
@@ -313,6 +311,8 @@ namespace UnityEditor.ShaderGraph.Drawing
                     throw new ArgumentOutOfRangeException();
             }
 
+            // Need to check if the Nodes that are connected are in a group or not
+            // If they are in the same group we also add in the Redirect Node
             var groupGuidOutputNode = graph.GetNodeFromGuid(edgeOutputSlot.slotReference.nodeGuid).groupGuid;
             var groupGuidInputNode = graph.GetNodeFromGuid(edgeInputSlot.slotReference.nodeGuid).groupGuid;
             if (groupGuidOutputNode == groupGuidInputNode)
