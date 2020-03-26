@@ -7,6 +7,13 @@ namespace UnityEngine.Rendering.HighDefinition
     [InitializeOnLoad]
     static class HDAdditionalSceneViewSettings
     {
+        static class Styles
+        {
+            public static readonly GUIContent AAMode = EditorGUIUtility.TrTextContent("Camera Anti-aliasing", "The anti-alising mode that will be used in the scene view camera.");
+            public static readonly GUIContent StopNaNs = EditorGUIUtility.TrTextContent("Camera Stop NaNs", "When enabled, any NaNs in the color buffer of the scene view camera will be suppressed.");
+            public static readonly string HelpBox = "Temporal Anti - aliasing in the Scene View is only supported when Animated Materials are enabled.";
+        }
+
         static AntialiasingMode s_SceneViewAntialiasing = AntialiasingMode.None;
 
         public static AntialiasingMode sceneViewAntialiasing
@@ -33,11 +40,11 @@ namespace UnityEngine.Rendering.HighDefinition
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("HD Render Pipeline", EditorStyles.boldLabel);
 
-            s_SceneViewAntialiasing = (AntialiasingMode)EditorGUILayout.EnumPopup("Camera Anti-aliasing", s_SceneViewAntialiasing);
+            s_SceneViewAntialiasing = (AntialiasingMode)EditorGUILayout.EnumPopup(Styles.AAMode, s_SceneViewAntialiasing);
             if (s_SceneViewAntialiasing == AntialiasingMode.TemporalAntialiasing)
-                EditorGUILayout.HelpBox("Temporal Anti-aliasing in the Scene View is only supported when Animated Materials are enabled.", MessageType.Info);
+                EditorGUILayout.HelpBox(Styles.HelpBox, MessageType.Info);
 
-            s_SceneViewStopNaNs = EditorGUILayout.Toggle("Camera Stop NaNs", s_SceneViewStopNaNs);
+            s_SceneViewStopNaNs = EditorGUILayout.Toggle(Styles.StopNaNs, s_SceneViewStopNaNs);
         }
     }
 #endif

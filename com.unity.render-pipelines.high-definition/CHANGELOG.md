@@ -596,6 +596,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Changed a few resources used by ray tracing shaders to be global resources (using register space1) for improved CPU performance.
 - All custom pass volumes are now executed for one injection point instead of the first one.
 - Hidden unsupported choice in emission in Materials
+- Moved scene view camera settings for HDRP from the preferences window to the scene view camera settings window.
 
 ## [7.1.1] - 2019-09-05
 
