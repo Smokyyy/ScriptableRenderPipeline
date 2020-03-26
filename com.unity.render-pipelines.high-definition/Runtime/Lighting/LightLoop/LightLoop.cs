@@ -1483,9 +1483,9 @@ namespace UnityEngine.Rendering.HighDefinition
 
 
             //Value of max smoothness is derived from Radius. Formula results from eyeballing. Radius of 0 results in 1 and radius of 2.5 results in 0.
-            //float maxSmoothness = Mathf.Clamp01(1.1725f / (1.01f + Mathf.Pow(1.0f * (additionalLightData.shapeRadius + 0.1f), 2f)) - 0.15f);
+            float maxSmoothness = Mathf.Clamp01(1.1725f / (1.01f + Mathf.Pow(1.0f * (additionalLightData.shapeRadius + 0.1f), 2f)) - 0.15f);
             // Value of max smoothness is from artists point of view, need to convert from perceptual smoothness to roughness
-            //lightData.minRoughness = (1.0f - maxSmoothness) * (1.0f - maxSmoothness);
+            lightData.minRoughness = (1.0f - maxSmoothness) * (1.0f - maxSmoothness);
 
             lightData.shadowMaskSelector = Vector4.zero;
 
