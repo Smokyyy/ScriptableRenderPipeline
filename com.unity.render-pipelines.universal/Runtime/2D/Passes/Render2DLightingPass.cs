@@ -115,7 +115,7 @@ namespace UnityEngine.Experimental.Rendering.Universal
                     int layerToRender = s_SortingLayers[i].id;
 
                     Light2D.LightStats lightStats;
-                    lightStats = Light2D.GetLightStatsByLayer(layerToRender);
+                    lightStats = Light2D.GetLightStatsByLayer(layerToRender, camera);
 
                     cmd.Clear();
                     for (int blendStyleIndex = 0; blendStyleIndex < blendStylesCount; blendStyleIndex++)
