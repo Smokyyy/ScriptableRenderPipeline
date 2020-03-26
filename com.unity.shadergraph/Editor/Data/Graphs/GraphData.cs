@@ -621,48 +621,33 @@ namespace UnityEditor.ShaderGraph
                 // If one edge is already deleted then we can not re-create.
                 if (serializableNode is RedirectNodeData redirectNode)
                 {
-                    SlotReference inputSlotRef = new SlotReference();
+                    SlotReference outputSlotRef = new SlotReference();
+                    var inputSlot = redirectNode.FindSlot<MaterialSlot>(RedirectNodeData.kInputSlotID);
 
-                    using (var tempInputSlots = PooledList<MaterialSlot>.Get())
+                    IEnumerable<IEdge> inEdges = GetEdges(inputSlot.slotReference);
+                    if (!inEdges.Any())
                     {
-                        redirectNode.GetInputSlots(tempInputSlots);
-
-                        foreach (var inputSlot in tempInputSlots)
-                        {
-                            // Get the slot where this edge starts from.
-                            IEnumerable<IEdge> inEdges = GetEdges(inputSlot.slotReference);
-                            if (!inEdges.Any())
-                            {
-                                continue;
-                            }
-
-                            inputSlotRef = inEdges.ToList()[0].outputSlot;
-                        }
+                        continue;
                     }
 
-                    List<SlotReference> outputSlotRefs =  new List<SlotReference>();
-                    using (var tempOutputSlots = PooledList<MaterialSlot>.Get())
-                    {
-                        redirectNode.GetOutputSlots(tempOutputSlots);
-                        foreach (var outputSlot in tempOutputSlots)
-                        {
-                            // Get the slot where this edge ends.
-                            var outEdges = GetEdges(outputSlot.slotReference).ToList();
-                            if (!outEdges.Any())
-                            {
-                                continue;
-                            }
+                    outputSlotRef = inEdges.ToList()[0].outputSlot;
+                    List<SlotReference> inputSlotRefs =  new List<SlotReference>();
 
-                            foreach (var edge in outEdges)
-                            {
-                                outputSlotRefs.Add(edge.inputSlot);
-                            }
-                        }
+                    var outputSlot = redirectNode.FindSlot<MaterialSlot>(RedirectNodeData.kOutputSlotID);
+                    // Get the slot where this edge ends.
+                    IEnumerable<IEdge> outEdges = GetEdges(outputSlot.slotReference);
+                    if (!outEdges.Any())
+                    {
+                        continue;
+                    }
+                    foreach (var edge in outEdges)
+                    {
+                        inputSlotRefs.Add(edge.inputSlot);
                     }
 
-                    foreach (SlotReference slot in outputSlotRefs)
+                    foreach (SlotReference slot in inputSlotRefs)
                     {
-                        Connect(inputSlotRef, slot);
+                        Connect(outputSlotRef, slot);
                     }
                 }
 
@@ -803,7 +788,7 @@ namespace UnityEditor.ShaderGraph
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            
+
             m_AddedInputs.Add(input);
         }
 

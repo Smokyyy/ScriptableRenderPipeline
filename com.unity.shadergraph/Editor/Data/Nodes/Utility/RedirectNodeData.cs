@@ -8,6 +8,8 @@ namespace UnityEditor.ShaderGraph
 {
     class RedirectNodeData : AbstractMaterialNode
     {
+        public const int kInputSlotID = 0;
+        public const int kOutputSlotID = 1;
         public RedirectNodeData()
         {
             name = "Redirect Node";

@@ -83,27 +83,21 @@ namespace UnityEditor.Graphing
 
         public static SlotReference DepthFirstCollectRedirectNodeFromNode(RedirectNodeData node)
         {
-            var ids = node.GetInputSlots<ISlot>().Select(x => x.id);
-            foreach (var slot in ids)
+            var inputSlot = node.FindSlot<MaterialSlot>(RedirectNodeData.kInputSlotID);
+            foreach (var edge in node.owner.GetEdges(inputSlot.slotReference))
             {
-                foreach (var edge in node.owner.GetEdges(node.GetSlotReference(slot)))
+                // get the input details
+                var outputSlotRef = edge.outputSlot;
+                var inputNode = node.owner.GetNodeFromGuid(outputSlotRef.nodeGuid);
+                // If this is a redirect node we continue to look for the top one
+                if (inputNode is RedirectNodeData redirectNode)
                 {
-                    // get the input details
-                    var outputSlotRef = edge.outputSlot;
-                    var inputNode = node.owner.GetNodeFromGuid(outputSlotRef.nodeGuid);
-                    // If this is a redirect node we continue to look for the top one
-                    if (inputNode is RedirectNodeData redirectNode)
-                    {
-                        return DepthFirstCollectRedirectNodeFromNode( redirectNode );
-                    }
-                    // else we return the actual slot reference
-                    return outputSlotRef;
+                    return DepthFirstCollectRedirectNodeFromNode( redirectNode );
                 }
-                // If no edges it is the first redirect node without an edge going into it and we should return the slot ref
-                return node.GetSlotReference(slot);
+                return outputSlotRef;
             }
-
-            return node.GetSlotReference(0);
+            // If no edges it is the first redirect node without an edge going into it and we should return the slot ref
+            return node.GetSlotReference(RedirectNodeData.kInputSlotID);
         }
 
         public static void DepthFirstCollectNodesFromNode(List<AbstractMaterialNode> nodeList, AbstractMaterialNode node,

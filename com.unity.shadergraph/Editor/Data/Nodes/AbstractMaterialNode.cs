@@ -287,15 +287,13 @@ namespace UnityEditor.ShaderGraph
                     var fromLeftNode = owner.GetNodeFromGuid<AbstractMaterialNode>(slotRef.nodeGuid);
                     if (fromLeftNode is RedirectNodeData)
                     {
-                        return redirNode.GetSlotValue(0, generationMode);
+                        return redirNode.GetSlotValue(RedirectNodeData.kInputSlotID, generationMode);
                     }
 
-                    if (fromLeftNode != null && fromLeftNode.GetType() != typeof(RedirectNodeData))
+                    if (fromLeftNode != null)
                     {
                         return GenerationUtils.AdaptNodeOutput(fromLeftNode, slotRef.slotId, inputSlot.concreteValueType);
                     }
-
-                    return redirNode.GetSlotValue(0, generationMode);
                 }
 
                 var slot = fromNode.FindOutputSlot<MaterialSlot>(fromSocketRef.slotId);
@@ -521,7 +519,7 @@ namespace UnityEditor.ShaderGraph
                     }
                 }
 
-                
+
                 tempSlots.Clear();
                 GetOutputSlots(tempSlots);
                 if(tempSlots.Any(x => x.hasError))
@@ -553,12 +551,12 @@ namespace UnityEditor.ShaderGraph
 
         public virtual void ValidateNode()
         {
-            
+
         }
 
         public int version { get; set; }
         public virtual bool canCopyNode => true;
-        
+
         protected virtual void CalculateNodeHasError()
         {
             foreach (var slot in this.GetInputSlots<MaterialSlot>())
