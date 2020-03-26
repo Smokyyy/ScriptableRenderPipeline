@@ -10,7 +10,7 @@ namespace UnityEngine.VFX.Utility
         public ExposedProperty m_Property = "PreviousPosition";
         public Transform Target = null;
         Vector3 oldPosition;
-
+    
         protected override void OnEnable()
         {
             base.OnEnable();
@@ -34,3 +34,4 @@ namespace UnityEngine.VFX.Utility
         }
     }
 }
+

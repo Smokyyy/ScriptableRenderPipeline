@@ -17,7 +17,7 @@ namespace UnityEditor.Rendering.HighDefinition
     [Serializable]
     [Title("Master", "Decal (HDRP)")]
     [FormerName("UnityEditor.Experimental.Rendering.HDPipeline.DecalMasterNode")]
-    class DecalMasterNode : AbstractMaterialNode, IMasterNode, IHasSettings, ICanChangeShaderGUI, IMayRequirePosition, IMayRequireNormal, IMayRequireTangent
+    class DecalMasterNode : AbstractMaterialNode, IMasterNode, IHasSettings, IMayRequirePosition, IMayRequireNormal, IMayRequireTangent
     {
         public const string PositionSlotName = "Vertex Position";
         public const string PositionSlotDisplayName = "Vertex Position";
@@ -55,7 +55,7 @@ namespace UnityEditor.Rendering.HighDefinition
         public const string EmissionSlotName = "Emission";
         public const string EmissionDisplaySlotName = "Emission";
         public const int EmissionSlotId = 9;
-
+        
         public const string VertexNormalSlotName = "Vertex Normal";
          public const int VertexNormalSlotID = 10;
 
@@ -112,20 +112,6 @@ namespace UnityEditor.Rendering.HighDefinition
             return (activeMask & mask) != 0;
         }
 
-        [SerializeField] private string m_ShaderGUIOverride;
-        public string ShaderGUIOverride
-        {
-            get => m_ShaderGUIOverride;
-            set => m_ShaderGUIOverride = value;
-        }
-
-        [SerializeField] private bool m_OverrideEnabled;
-        public bool OverrideEnabled
-        {
-            get => m_OverrideEnabled;
-            set => m_OverrideEnabled = value;
-        }
-
         public DecalMasterNode()
         {
             UpdateNodeAfterDeserialization();
@@ -163,7 +149,7 @@ namespace UnityEditor.Rendering.HighDefinition
                 AddSlot(new TangentMaterialSlot(VertexTangentSlotID, VertexTangentSlotName, VertexTangentSlotName, CoordinateSpace.Object, ShaderStageCapability.Vertex));
                 validSlots.Add(VertexTangentSlotID);
             }
-
+            
             // Albedo
             if (MaterialTypeUsesSlotMask(SlotMask.Albedo))
             {
@@ -252,11 +238,11 @@ namespace UnityEditor.Rendering.HighDefinition
             return new ConditionalField[]
             {
                 // Features
-                new ConditionalField(Fields.GraphVertex,            IsSlotConnected(PositionSlotId) ||
-                                                                        IsSlotConnected(VertexNormalSlotID) ||
+                new ConditionalField(Fields.GraphVertex,            IsSlotConnected(PositionSlotId) || 
+                                                                        IsSlotConnected(VertexNormalSlotID) || 
                                                                         IsSlotConnected(VertexTangentSlotID)),
                 new ConditionalField(Fields.GraphPixel,             true),
-
+                
                 // Material
                 new ConditionalField(HDFields.AffectsAlbedo,        affectsAlbedo.isOn),
                 new ConditionalField(HDFields.AffectsNormal,        affectsNormal.isOn),

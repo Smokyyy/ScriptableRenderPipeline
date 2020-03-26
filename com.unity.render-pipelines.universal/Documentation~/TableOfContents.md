@@ -1,5 +1,4 @@
 * [Universal Render Pipeline](index.md)
-* [Requirements](requirements)
 * [Features]()
   * [Feature Comparison with the Built-in Render Pipeline](universalrp-builtin-feature-comparison.md)
 * [Getting started](InstallingAndConfiguringURP.md)

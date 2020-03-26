@@ -187,11 +187,7 @@ namespace UnityEditor.Rendering
             else
             {
                 if (assetHasChanged || profileRef != m_ComponentList.asset)
-                {
-                    serializedObject.ApplyModifiedProperties();
-                    serializedObject.Update();
                     RefreshEffectListEditor(profileRef);
-                }
 
                 if (!multiEdit)
                 {

@@ -1,6 +1,3 @@
-#ifndef UNITY_PATH_TRACING_LIGHT_INCLUDED
-#define UNITY_PATH_TRACING_LIGHT_INCLUDED
-
 // How many lights (at most) do we support at one given shading point
 // FIXME: hardcoded limits are evil, this LightList should instead be put together in C#
 #define MAX_LOCAL_LIGHT_COUNT 16
@@ -29,12 +26,6 @@ bool IsRectAreaLightActive(LightData lightData, float3 position, float3 normal)
 {
     float3 lightVec = position - GetAbsolutePositionWS(lightData.positionRWS);
 
-#ifndef USE_LIGHT_CLUSTER
-    // Check light range first
-    if (Length2(lightVec) > Sq(lightData.range))
-        return false;
-#endif
-
     // Check that the shading position is in front of the light
     float lightCos = dot(lightVec, lightData.forward);
     if (lightCos < 0.0)
@@ -51,12 +42,6 @@ bool IsRectAreaLightActive(LightData lightData, float3 position, float3 normal)
 bool IsPointLightActive(LightData lightData, float3 position, float3 normal)
 {
     float3 lightVec = position - GetAbsolutePositionWS(lightData.positionRWS);
-
-#ifndef USE_LIGHT_CLUSTER
-    // Check light range first
-    if (Length2(lightVec) > Sq(lightData.range))
-        return false;
-#endif
 
     // Check that at least part of the light is above the tangent plane
     float lightTangentDist = dot(normal, lightVec);
@@ -85,17 +70,9 @@ LightList CreateLightList(float3 position, float3 normal, uint lightLayers)
     uint i, localPointCount, localCount;
 
 #ifdef USE_LIGHT_CLUSTER
-    if (PointInsideCluster(position))
-    {
-        list.cellIndex = GetClusterCellIndex(position);
-        localPointCount = GetPunctualLightClusterCellCount(list.cellIndex);
-        localCount = GetAreaLightClusterCellCount(list.cellIndex);
-    }
-    else
-    {
-        localPointCount = 0;
-        localCount = 0;
-    }
+    list.cellIndex = GetClusterCellIndex(position);
+    localPointCount = GetPunctualLightClusterCellCount(list.cellIndex);
+    localCount = GetAreaLightClusterCellCount(list.cellIndex);
 #else
     localPointCount = _PunctualLightCountRT;
     localCount = _PunctualLightCountRT + _AreaLightCountRT;
@@ -221,13 +198,12 @@ float3 GetPunctualEmission(LightData lightData, float3 outgoingDir, float dist)
     float4 distances = float4(dist, Sq(dist), rcp(dist), -dist * dot(outgoingDir, lightData.forward));
     emission *= PunctualLightAttenuation(distances, lightData.rangeAttenuationScale, lightData.rangeAttenuationBias, lightData.angleScale, lightData.angleOffset);
 
-#ifndef LIGHT_EVALUATION_NO_COOKIE
+    // Cookie
     if (lightData.cookieMode != COOKIEMODE_NONE)
     {
         LightLoopContext context;
         emission *= EvaluateCookie_Punctual(context, lightData, -dist * outgoingDir);
     }
-#endif
 
     return emission;
 }
@@ -236,13 +212,12 @@ float3 GetDirectionalEmission(DirectionalLightData lightData, float3 outgoingVec
 {
     float3 emission = lightData.color;
 
-#ifndef LIGHT_EVALUATION_NO_COOKIE
+    // Cookie
     if (lightData.cookieMode != COOKIEMODE_NONE)
     {
         LightLoopContext context;
         emission *= EvaluateCookie_Directional(context, lightData, -outgoingVec);
     }
-#endif
 
     return emission;
 }
@@ -251,17 +226,16 @@ float3 GetAreaEmission(LightData lightData, float centerU, float centerV, float 
 {
     float3 emission = lightData.color;
 
-    // Range windowing (see LightLoop.cs to understand why it is written this way)
-    if (lightData.rangeAttenuationBias == 1.0)
-        emission *= SmoothDistanceWindowing(sqDist, rcp(Sq(lightData.range)), lightData.rangeAttenuationBias);
-
-#ifndef LIGHT_EVALUATION_NO_COOKIE
+    // Cookie
     if (lightData.cookieMode != COOKIEMODE_NONE)
     {
         float2 uv = float2(0.5 - centerU, 0.5 + centerV);
         emission *= SampleCookie2D(uv, lightData.cookieScaleOffset);
     }
-#endif
+
+    // Range windowing (see LightLoop.cs to understand why it is written this way)
+    if (lightData.rangeAttenuationBias == 1.0)
+        emission *= SmoothDistanceWindowing(sqDist, rcp(Sq(lightData.range)), lightData.rangeAttenuationBias) ;
 
     return emission;
 }
@@ -342,10 +316,6 @@ bool SampleLights(LightList lightList,
                 pdf = GetLocalLightWeight(lightList) * DELTA_PDF;
             }
         }
-
-#ifndef LIGHT_EVALUATION_NO_HEIGHT_FOG
-        ApplyFogAttenuation(position, outgoingDir, dist, value);
-#endif
     }
     else // Distant lights
     {
@@ -373,10 +343,6 @@ bool SampleLights(LightList lightList,
             return false;
 
         dist = FLT_INF;
-
-#ifndef LIGHT_EVALUATION_NO_HEIGHT_FOG
-        ApplyFogAttenuation(position, outgoingDir, value);
-#endif
     }
 
     return any(value);
@@ -389,7 +355,6 @@ void EvaluateLights(LightList lightList,
 {
     value = 0.0;
     pdf = 0.0;
-
     uint i;
 
     // First local lights (area lights only, as we consider the probability of hitting a point light neglectable)
@@ -414,11 +379,7 @@ void EvaluateLights(LightList lightList,
                 if (abs(centerU) < 0.5 && abs(centerV) < 0.5)
                 {
                     float t2 = Sq(t);
-                    float3 lightValue = GetAreaEmission(lightData, centerU, centerV, t2);
-#ifndef LIGHT_EVALUATION_NO_HEIGHT_FOG
-                    ApplyFogAttenuation(rayDescriptor.Origin, rayDescriptor.Direction, t, lightValue);
-#endif
-                    value += lightValue;
+                    value += GetAreaEmission(lightData, centerU, centerV, t2);
 
                     float lightArea = length(cross(lightData.size.x * lightData.right, lightData.size.y * lightData.up));
                     pdf += GetLocalLightWeight(lightList) * t2 / (lightArea * cosTheta);
@@ -441,16 +402,10 @@ void EvaluateLights(LightList lightList,
             float cosTheta = -dot(rayDescriptor.Direction, lightData.forward);
             if (cosTheta >= cosHalfAngle)
             {
-                float3 lightValue = GetDirectionalEmission(lightData, rayDescriptor.Direction);
-#ifndef LIGHT_EVALUATION_NO_HEIGHT_FOG
-                ApplyFogAttenuation(rayDescriptor.Origin, rayDescriptor.Direction, lightValue);
-#endif
                 float rcpPdf = TWO_PI * (1.0 - cosHalfAngle);
-                value += lightValue / rcpPdf;
+                value += GetDirectionalEmission(lightData, rayDescriptor.Direction) / rcpPdf;
                 pdf += GetDistantLightWeight(lightList) / rcpPdf;
             }
         }
     }
 }
-
-#endif // UNITY_PATH_TRACING_LIGHT_INCLUDED

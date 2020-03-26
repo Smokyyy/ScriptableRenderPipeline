@@ -16,7 +16,8 @@ namespace UnityEditor.VFX.Test
 {
     public class VFXSpaceBoundTest
     {
-        [OneTimeTearDown]
+
+        [TearDown]
         public void CleanUp()
         {
             VFXTestCommon.DeleteAllTemporaryGraph();

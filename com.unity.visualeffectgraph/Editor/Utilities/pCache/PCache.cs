@@ -268,83 +268,74 @@ namespace UnityEditor.Experimental.VFX.Utility
             SetFloatData(component + ".w", dataW);
         }
 
-        public void SaveToFile(string filePath, Format format = Format.Binary)
+        public void SaveToFile(string filename, Format format = Format.Binary)
         {
-            if (string.IsNullOrEmpty(filePath))
-                throw new InvalidOperationException("Cannot SaveToFile with an empty filepath");
+            FileStream outFile = File.Create(filename);
+            BinaryWriter binaryWriter = new BinaryWriter(outFile);
 
-            var directory = Path.GetDirectoryName(filePath);
-            if (!Directory.Exists(directory))
-                Directory.CreateDirectory(directory);
+            binaryWriter.Write(BuildHeaderString(format));
 
-            if (File.Exists(filePath))
-                File.Delete(filePath);
-
-            using (var binaryWriter = new BinaryWriter(File.Create(filePath)))
+            if (format == Format.Binary)
             {
-                binaryWriter.Write(BuildHeaderString(format));
-
-                if (format == Format.Binary)
+                for (int i = 0; i < elementCount; i++)
                 {
-                    for (int i = 0; i < elementCount; i++)
+                    for (int j = 0; j < properties.Count; j++)
                     {
-                        for (int j = 0; j < properties.Count; j++)
+                        var prop = properties[j];
+                        switch (prop.Type)
                         {
-                            var prop = properties[j];
-                            switch (prop.Type)
-                            {
-                                case "byte":
-                                    binaryWriter.Write((byte)buckets[j][i]); break;
-                                case "short":
-                                    binaryWriter.Write((short)buckets[j][i]); break;
-                                case "ushort":
-                                    binaryWriter.Write((ushort)buckets[j][i]); break;
-                                case "int":
-                                    binaryWriter.Write((int)buckets[j][i]); break;
-                                case "uint":
-                                    binaryWriter.Write((uint)buckets[j][i]); break;
-                                case "float":
-                                    binaryWriter.Write((float)buckets[j][i]); break;
-                                case "double":
-                                    binaryWriter.Write((double)buckets[j][i]); break;
-                            }
+                            case "byte":
+                                binaryWriter.Write((byte)buckets[j][i]); break;
+                            case "short":
+                                binaryWriter.Write((short)buckets[j][i]); break;
+                            case "ushort":
+                                binaryWriter.Write((ushort)buckets[j][i]); break;
+                            case "int":
+                                binaryWriter.Write((int)buckets[j][i]); break;
+                            case "uint":
+                                binaryWriter.Write((uint)buckets[j][i]); break;
+                            case "float":
+                                binaryWriter.Write((float)buckets[j][i]); break;
+                            case "double":
+                                binaryWriter.Write((double)buckets[j][i]); break;
                         }
                     }
                 }
-                else if (format == Format.Ascii)
-                {
-                    var sb = new StringBuilder();
-                    for (int i = 0; i < elementCount; i++)
-                    {
-                        for (int j = 0; j < properties.Count; j++)
-                        {
-                            var prop = properties[j];
-                            switch (prop.Type)
-                            {
-                                case "byte":
-                                    sb.Append(((byte)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
-                                case "short":
-                                    sb.Append(((short)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
-                                case "ushort":
-                                    sb.Append(((ushort)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
-                                case "int":
-                                    sb.Append(((int)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
-                                case "uint":
-                                    sb.Append(((uint)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
-                                case "float":
-                                    sb.Append(((float)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
-                                case "double":
-                                    sb.Append(((double)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
-                            }
-                            sb.Append(j == properties.Count - 1 ? "\n" : " ");
-                        }
-                        binaryWriter.Write(sb.ToString().ToCharArray());
-                        sb.Clear();
-                    }
-                }
-                else throw new InvalidOperationException("Invalid format : " + format);
             }
-            AssetDatabase.ImportAsset(filePath, ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport);
+            else if (format == Format.Ascii)
+            {
+                for (int i = 0; i < elementCount; i++)
+                {
+                    StringBuilder sb = new StringBuilder();
+
+                    for (int j = 0; j < properties.Count; j++)
+                    {
+                        var prop = properties[j];
+                        switch (prop.Type)
+                        {
+                            case "byte":
+                                sb.Append(((byte)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
+                            case "short":
+                                sb.Append(((short)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
+                            case "ushort":
+                                sb.Append(((ushort)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
+                            case "int":
+                                sb.Append(((int)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
+                            case "uint":
+                                sb.Append(((uint)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
+                            case "float":
+                                sb.Append(((float)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
+                            case "double":
+                                sb.Append(((double)buckets[j][i]).ToString(CultureInfo.InvariantCulture)); break;
+                        }
+                        sb.Append(j == properties.Count - 1 ? "\n" : " ");
+                    }
+                    binaryWriter.Write(sb.ToString().ToCharArray());
+                }
+            }
+            else throw new Exception("Invalid format : " + format);
+
+            binaryWriter.Close();
         }
 
         private char[] BuildHeaderString(Format format)
@@ -368,19 +359,19 @@ namespace UnityEditor.Experimental.VFX.Utility
         {
             PCache data = new PCache();
 
+            Stream s = File.OpenRead(filename);
             List<string> header;
             long offset;
-            using (var stream = File.OpenRead(filename))
-            {
-                GetHeader(stream, out offset, out header);
-            }
+            GetHeader(s, out offset, out header);
 
-            if (header == null || header[0] != "pcache")
+            if (header[0] != "pcache")
                 throw new Exception("Invalid header : missing magic number");
 
             Format format = (Format)int.MaxValue;
             data.elementCount = 0;
+
             data.properties = new List<PropertyDesc>();
+
 
             foreach (string line in header)
             {
@@ -438,36 +429,37 @@ namespace UnityEditor.Experimental.VFX.Utility
 
             if (format == Format.Binary)
             {
-                using (var binaryReader = new BinaryReader(File.OpenRead(filename)))
+                s.Close(); // End Header, goto binary mode
+                s = File.OpenRead(filename);
+                BinaryReader b = new BinaryReader(s);
+                s.Seek(offset, SeekOrigin.Begin);
+
+                for (int i = 0; i < data.elementCount; i++)
                 {
-                    binaryReader.BaseStream.Seek(offset, SeekOrigin.Begin);
-                    for (int i = 0; i < data.elementCount; i++)
+                    for (int j = 0; j < data.properties.Count; j++)
                     {
-                        for (int j = 0; j < data.properties.Count; j++)
+                        var prop = data.properties[j];
+                        switch (prop.Type)
                         {
-                            var prop = data.properties[j];
-                            switch (prop.Type)
-                            {
-                                case "short": data.buckets[j].Add(binaryReader.ReadInt16()); break;
-                                case "ushort": data.buckets[j].Add(binaryReader.ReadUInt16()); break;
-                                case "int": data.buckets[j].Add(binaryReader.ReadInt32()); break;
-                                case "uint": data.buckets[j].Add(binaryReader.ReadUInt32()); break;
-                                case "byte": data.buckets[j].Add(binaryReader.ReadChar()); break;
-                                case "float": data.buckets[j].Add(binaryReader.ReadSingle()); break;
-                                case "double": data.buckets[j].Add(binaryReader.ReadDouble()); break;
-                            }
+                            case "short": data.buckets[j].Add(b.ReadInt16()); break;
+                            case "ushort": data.buckets[j].Add(b.ReadUInt16()); break;
+                            case "int": data.buckets[j].Add(b.ReadInt32()); break;
+                            case "uint": data.buckets[j].Add(b.ReadUInt32()); break;
+                            case "byte": data.buckets[j].Add(b.ReadChar()); break;
+                            case "float": data.buckets[j].Add(b.ReadSingle()); break;
+                            case "double": data.buckets[j].Add(b.ReadDouble()); break;
                         }
                     }
                 }
             }
             else if (format == Format.Ascii)
             {
-                string[] lines = null;
-                using (var reader = new StreamReader(File.OpenRead(filename)))
-                {
-                    reader.BaseStream.Seek(offset, SeekOrigin.Begin);
-                    lines = reader.ReadToEnd().Replace("\r", "").Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                }
+                s.Close(); // End Header, goto ascii mode
+                s = File.OpenRead(filename);
+                StreamReader reader = new StreamReader(s);
+                s.Seek(offset, SeekOrigin.Begin);
+
+                string[] lines = reader.ReadToEnd().Replace("\r", "").Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
                 if (lines.Length != data.elementCount)
                     throw new InvalidOperationException(string.Format("Bad item amount, {0} expected in header, found {1}", data.elementCount, lines.Length));
@@ -503,33 +495,31 @@ namespace UnityEditor.Experimental.VFX.Utility
             lines = new List<string>();
 
             s.Seek(0, SeekOrigin.Begin);
-            using (var sr = new BinaryReader(s))
+            BinaryReader sr = new BinaryReader(s);
+
+            do
             {
-                var sb = new StringBuilder();
+                StringBuilder sb = new StringBuilder();
+                bool newline = false;
                 do
                 {
-                    bool newline = false;
-                    do
+                    char c = sr.ReadChar();
+                    byteLength++;
+
+                    if (c == '\n' || c == '\r')
                     {
-                        char c = sr.ReadChar();
-                        byteLength++;
-
-                        if (c == '\n' || c == '\r')
-                        {
-                            if (sb.Length > 0)
-                                newline = true;
-                        }
-                        else sb.Append(c);
+                        if (sb.Length > 0)
+                            newline = true;
                     }
-                    while (!newline);
-
-                    string line = sb.ToString();
-                    sb.Clear();
-                    lines.Add(line);
-                    if (line == "end_header") found_end_header = true;
+                    else sb.Append(c);
                 }
-                while (!found_end_header);
+                while (!newline);
+
+                string line = sb.ToString();
+                lines.Add(line);
+                if (line == "end_header") found_end_header = true;
             }
+            while (!found_end_header);
         }
 
         private static string GetComponentName(string property)

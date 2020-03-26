@@ -58,6 +58,7 @@ namespace UnityEngine.VFX.Utility
         {
             bones = ChildrenOf(HierarchyRoot, MaximumDepth);
             int count = bones.Count;
+            Debug.Log("Found Bone Count: " + count);
 
             position = new Texture2D(count, 1, TextureFormat.RGBAHalf, false, true);
             targetPosition = new Texture2D(count, 1, TextureFormat.RGBAHalf, false, true);
@@ -78,11 +79,12 @@ namespace UnityEngine.VFX.Utility
                     sourceRadius = DefaultRadius,
                     targetRadius = DefaultRadius,
                 });
-                if (depth > 0)
-                    output.AddRange(ChildrenOf(child, depth - 1));
+                if(depth > 0)
+                    output.AddRange(ChildrenOf(child, depth-1));
             }
             return output;
         }
+
 
         void UpdateData()
         {
@@ -108,6 +110,7 @@ namespace UnityEngine.VFX.Utility
             targetPosition.Apply();
             radius.Apply();
         }
+
 
         public override bool IsValid(VisualEffect component)
         {

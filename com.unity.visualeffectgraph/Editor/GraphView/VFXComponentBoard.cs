@@ -1,3 +1,4 @@
+
 using System;
 using UnityEditor.UIElements;
 using UnityEditor.Experimental.GraphView;
@@ -270,7 +271,7 @@ namespace UnityEditor.VFX.UI
         void OnDebugModes()
         {
             GenericMenu menu = new GenericMenu();
-            foreach (VFXUIDebug.Modes mode in Enum.GetValues(typeof(VFXUIDebug.Modes)))
+            foreach(VFXUIDebug.Modes mode in Enum.GetValues(typeof(VFXUIDebug.Modes)))
             {
                 menu.AddItem(EditorGUIUtility.TextContent(mode.ToString()), false, SetDebugMode, mode);
             }
@@ -405,6 +406,7 @@ namespace UnityEditor.VFX.UI
             m_SelectButton.visible = false;
             if (m_DebugUI != null)
                 m_DebugUI.Clear();
+
         }
 
         public void Attach(VisualEffect effect = null)
@@ -560,13 +562,12 @@ namespace UnityEditor.VFX.UI
 
         IEnumerable<String> GetEventNames()
         {
-            foreach (var context in controller.contexts.Select(t => t.model).OfType<VFXContext>())
+            foreach(var context in controller.contexts.Select(t => t.model).OfType<VFXContext>())
             {
                 foreach (var name in RecurseGetEventNames(context))
                     yield return name;
             }
         }
-
         IEnumerable<String> RecurseGetEventNames(VFXContext context)
         {
             if (context is VFXBasicEvent)
@@ -574,9 +575,9 @@ namespace UnityEditor.VFX.UI
                 if (!IsDefaultEvent(name))
                     yield return (context as VFXBasicEvent).eventName;
             }
-            else if (context is VFXSubgraphContext)
+            else if( context is VFXSubgraphContext)
             {
-                foreach (var subContext in (context as VFXSubgraphContext).subChildren.OfType<VFXContext>())
+                foreach( var subContext in (context as VFXSubgraphContext).subChildren.OfType<VFXContext>())
                 {
                     foreach (var name in RecurseGetEventNames(subContext))
                         yield return name;

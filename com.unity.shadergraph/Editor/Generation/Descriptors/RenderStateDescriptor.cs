@@ -11,7 +11,6 @@
         ColorMask,
         ZClip,
         Stencil,
-        AlphaToMask,
     }
 
     [GenerationAPI]
@@ -41,7 +40,6 @@
         public static RenderStateDescriptor ZWrite(string value) => new RenderStateDescriptor { type = RenderStateType.ZWrite, value = $"ZWrite {value}" };
         public static RenderStateDescriptor ZClip(string value) => new RenderStateDescriptor { type = RenderStateType.ZClip, value = $"ZClip {value}" };
         public static RenderStateDescriptor ColorMask(string value) => new RenderStateDescriptor { type = RenderStateType.ColorMask, value = $"{value}" };
-        public static RenderStateDescriptor AlphaToMask(string value) => new RenderStateDescriptor { type = RenderStateType.AlphaToMask, value = $"AlphaToMask {value}" };
         public static RenderStateDescriptor Stencil(StencilDescriptor value) => new RenderStateDescriptor { type = RenderStateType.Stencil, value = value.ToShaderString() };
     }
 }

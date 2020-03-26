@@ -1,5 +1,3 @@
-#ifdef DEBUG_DISPLAY // Guard define here to be compliant with how shader graph generate code for include
-
 #ifndef UNITY_DEBUG_DISPLAY_INCLUDED
 #define UNITY_DEBUG_DISPLAY_INCLUDED
 
@@ -275,5 +273,3 @@ bool ShouldFlipDebugTexture()
 }
 
 #endif
-
-#endif // DEBUG_DISPLAY

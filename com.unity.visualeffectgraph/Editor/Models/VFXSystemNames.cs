@@ -39,6 +39,7 @@ namespace UnityEditor.VFX
                     if (contextData != null)
                         return contextData.title;
                 }
+
             }
             return null;
         }
@@ -163,5 +164,6 @@ namespace UnityEditor.VFX
 
             return index;
         }
+
     }
 }

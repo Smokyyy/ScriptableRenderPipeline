@@ -35,7 +35,10 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
 
         public bool IsValid(IMasterNode masterNode)
         {
-            return GetSubShaderDescriptorFromMasterNode(masterNode) != null;
+            return (masterNode is PBRMasterNode ||
+                    masterNode is UnlitMasterNode ||
+                    masterNode is SpriteLitMasterNode ||
+                    masterNode is SpriteUnlitMasterNode);
         }
 
         public bool IsPipelineCompatible(RenderPipelineAsset currentPipeline)
@@ -48,25 +51,20 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
             context.AddAssetDependencyPath(AssetDatabase.GUIDToAssetPath("7395c9320da217b42b9059744ceb1de6")); // MeshTarget
             context.AddAssetDependencyPath(AssetDatabase.GUIDToAssetPath("ac9e1a400a9ce404c8f26b9c1238417e")); // UniversalMeshTarget
 
-            var subShader = GetSubShaderDescriptorFromMasterNode(context.masterNode);
-            if (subShader != null)
-                context.SetupSubShader(subShader.Value);
-        }
-
-        public SubShaderDescriptor? GetSubShaderDescriptorFromMasterNode(IMasterNode masterNode)
-        {
-            switch (masterNode)
+            switch(context.masterNode)
             {
-                case PBRMasterNode _:
-                    return UniversalSubShaders.PBR;
-                case UnlitMasterNode _:
-                    return UniversalSubShaders.Unlit;
-                case SpriteLitMasterNode _:
-                    return UniversalSubShaders.SpriteLit;
-                case SpriteUnlitMasterNode _:
-                    return UniversalSubShaders.SpriteUnlit;
-                default:
-                    return null;
+                case PBRMasterNode pbrMasterNode:
+                    context.SetupSubShader(UniversalSubShaders.PBR);
+                    break;
+                case UnlitMasterNode unlitMasterNode:
+                    context.SetupSubShader(UniversalSubShaders.Unlit);
+                    break;
+                case SpriteLitMasterNode spriteLitMasterNode:
+                    context.SetupSubShader(UniversalSubShaders.SpriteLit);
+                    break;
+                case SpriteUnlitMasterNode spriteUnlitMasterNode:
+                    context.SetupSubShader(UniversalSubShaders.SpriteUnlit);
+                    break;
             }
         }
     }

@@ -53,6 +53,7 @@ namespace UnityEngine.Rendering.HighDefinition
     {
         PathTracing m_PathTracingSettings = null;
 
+        uint  m_CurrentIteration = 0;
 #if UNITY_EDITOR
         uint  m_CacheMaxIteration = 0;
 #endif // UNITY_EDITOR
@@ -62,9 +63,6 @@ namespace UnityEngine.Rendering.HighDefinition
         uint  m_CacheCameraHeight = 0;
 
         bool m_CameraSkyEnabled;
-        bool m_FogEnabled;
-
-        RTHandle m_RadianceTexture; // stores the per-pixel results of path tracing for this frame
 
         void InitPathTracing()
         {
@@ -73,10 +71,6 @@ namespace UnityEngine.Rendering.HighDefinition
             Undo.undoRedoPerformed += OnSceneEdit;
             SceneView.duringSceneGui += OnSceneGui;
 #endif // UNITY_EDITOR
-
-            m_RadianceTexture = RTHandles.Alloc(Vector2.one, TextureXR.slices, colorFormat: GraphicsFormat.R32G32B32A32_SFloat, dimension: TextureXR.dimension,
-                                        enableRandomWrite: true, useMipMap: false, autoGenerateMips: false,
-                                        name: "PathTracingFrameBuffer");
         }
 
         void ReleasePathTracing()
@@ -86,13 +80,11 @@ namespace UnityEngine.Rendering.HighDefinition
             Undo.undoRedoPerformed -= OnSceneEdit;
             SceneView.duringSceneGui -= OnSceneGui;
 #endif // UNITY_EDITOR
-
-            RTHandles.Release(m_RadianceTexture);
         }
 
         internal void ResetPathTracing()
         {
-            m_SubFrameManager.Reset();
+            m_CurrentIteration = 0;
         }
 
 #if UNITY_EDITOR
@@ -103,11 +95,11 @@ namespace UnityEngine.Rendering.HighDefinition
             if (m_PathTracingSettings && m_CacheMaxIteration != m_PathTracingSettings.maximumSamples.value)
             {
                 m_CacheMaxIteration = (uint) m_PathTracingSettings.maximumSamples.value;
-                if (m_SubFrameManager.iteration >= m_CacheMaxIteration)
-                    ResetPathTracing();
+                if (m_CurrentIteration >= m_CacheMaxIteration)
+                    m_CurrentIteration = 0;
             }
             else
-                ResetPathTracing();
+                m_CurrentIteration = 0;
         }
 
         private UndoPropertyModification[] OnUndoRecorded(UndoPropertyModification[] modifications)
@@ -120,24 +112,19 @@ namespace UnityEngine.Rendering.HighDefinition
         private void OnSceneGui(SceneView sv)
         {
             if (Event.current.type == EventType.MouseDrag)
-                ResetPathTracing();
+                m_CurrentIteration = 0;
         }
 
 #endif // UNITY_EDITOR
 
         private void CheckDirtiness(HDCamera hdCamera)
         {
-            if (m_SubFrameManager.isRecording)
-            {
-                return;
-            }
-
             // Check camera clear mode dirtiness
-            bool enabled = (hdCamera.clearColorMode == HDAdditionalCameraData.ClearColorMode.Sky);
-            if (enabled != m_CameraSkyEnabled)
+            bool cameraSkyEnabled = (hdCamera.clearColorMode == HDAdditionalCameraData.ClearColorMode.Sky);
+            if (cameraSkyEnabled != m_CameraSkyEnabled)
             {
-                m_CameraSkyEnabled = enabled;
-                ResetPathTracing();
+                m_CameraSkyEnabled = cameraSkyEnabled;
+                m_CurrentIteration = 0;
                 return;
             }
 
@@ -146,30 +133,21 @@ namespace UnityEngine.Rendering.HighDefinition
             {
                 m_CacheCameraWidth = (uint) hdCamera.actualWidth;
                 m_CacheCameraHeight = (uint) hdCamera.actualHeight;
-                ResetPathTracing();
+                m_CurrentIteration = 0;
                 return;
             }
 
             // Check camera matrix dirtiness
             if (hdCamera.mainViewConstants.nonJitteredViewProjMatrix != (hdCamera.mainViewConstants.prevViewProjMatrix))
             {
-                ResetPathTracing();
-                return;
-            }
-
-            // Check fog dirtiness
-            enabled = Fog.IsFogEnabled(hdCamera);
-            if (enabled != m_FogEnabled)
-            {
-                m_FogEnabled = enabled;
-                ResetPathTracing();
+                m_CurrentIteration = 0;
                 return;
             }
 
             // Check materials dirtiness
             if (m_MaterialsDirty)
             {
-                ResetPathTracing();
+                m_CurrentIteration = 0;
                 m_MaterialsDirty = false;
                 return;
             }
@@ -178,7 +156,7 @@ namespace UnityEngine.Rendering.HighDefinition
             if (m_CacheLightCount != m_RayTracingLights.lightCount)
             {
                 m_CacheLightCount = (uint) m_RayTracingLights.lightCount;
-                ResetPathTracing();
+                m_CurrentIteration = 0;
                 return;
             }
 
@@ -187,7 +165,7 @@ namespace UnityEngine.Rendering.HighDefinition
             if (accelSize != m_CacheAccelSize)
             {
                 m_CacheAccelSize = accelSize;
-                ResetPathTracing();
+                m_CurrentIteration = 0;
             }
         }
 
@@ -198,7 +176,7 @@ namespace UnityEngine.Rendering.HighDefinition
                                         name: string.Format("PathTracingHistoryBuffer{0}", frameIndex));
         }
 
-        void RenderPathTracing(HDCamera hdCamera, CommandBuffer cmd, RTHandle outputTexture)
+        void RenderPathTracing(HDCamera hdCamera, CommandBuffer cmd, RTHandle outputTexture, ScriptableRenderContext renderContext, int frameCount)
         {
             RayTracingShader pathTracingShader = m_Asset.renderPipelineRayTracingResources.pathTracing;
             m_PathTracingSettings = hdCamera.volumeStack.GetComponent<PathTracing>();
@@ -213,73 +191,69 @@ namespace UnityEngine.Rendering.HighDefinition
             BlueNoise blueNoiseManager = GetBlueNoiseManager();
             blueNoiseManager.BindDitheredRNGData256SPP(cmd);
 
+            // Grab the history buffer (hijack the reflections one)
+            RTHandle history = hdCamera.GetCurrentFrameRT((int)HDCameraFrameHistoryType.PathTracing)
+                ?? hdCamera.AllocHistoryFrameRT((int)HDCameraFrameHistoryType.PathTracing, PathTracingHistoryBufferAllocatorFunction, 1);
+
             // Grab the acceleration structure and the list of HD lights for the target camera
             RayTracingAccelerationStructure accelerationStructure = RequestAccelerationStructure();
             HDRaytracingLightCluster lightCluster = RequestLightCluster();
             LightCluster lightClusterSettings = hdCamera.volumeStack.GetComponent<LightCluster>();
             RayTracingSettings rayTracingSettings = hdCamera.volumeStack.GetComponent<RayTracingSettings>();
 
-            if (!m_SubFrameManager.isRecording)
-            {
-                // If we are recording, the max iteration is set/overridden by the subframe manager, otherwise we read it from the path tracing volume
-                m_SubFrameManager.subFrameCount = (uint)m_PathTracingSettings.maximumSamples.value;
-            }
+            // Define the shader pass to use for the path tracing pass
+            cmd.SetRayTracingShaderPass(pathTracingShader, "PathTracingDXR");
 
+            // Set the acceleration structure for the pass
+            cmd.SetRayTracingAccelerationStructure(pathTracingShader, HDShaderIDs._RaytracingAccelerationStructureName, accelerationStructure);
+
+            // Inject the ray-tracing sampling data
+            cmd.SetGlobalTexture(HDShaderIDs._OwenScrambledTexture, m_Asset.renderPipelineResources.textures.owenScrambled256Tex);
+            cmd.SetGlobalTexture(HDShaderIDs._ScramblingTexture, m_Asset.renderPipelineResources.textures.scramblingTex);
+
+            // Inject the ray generation data
 #if UNITY_HDRP_DXR_TESTS_DEFINE
-			if (Application.isPlaying)
-            	m_SubFrameManager.subFrameCount = 1;
+            cmd.SetGlobalFloat(HDShaderIDs._RaytracingNumSamples, 1);
+#else
+            cmd.SetGlobalFloat(HDShaderIDs._RaytracingNumSamples, m_PathTracingSettings.maximumSamples.value);
 #endif
+            cmd.SetGlobalFloat(HDShaderIDs._RaytracingMinRecursion, m_PathTracingSettings.minimumDepth.value);
+            cmd.SetGlobalFloat(HDShaderIDs._RaytracingMaxRecursion, m_PathTracingSettings.maximumDepth.value);
+            cmd.SetGlobalFloat(HDShaderIDs._RaytracingIntensityClamp, m_PathTracingSettings.maximumIntensity.value);
+            cmd.SetGlobalFloat(HDShaderIDs._RaytracingRayBias, rayTracingSettings.rayBias.value);
+            cmd.SetGlobalFloat(HDShaderIDs._RaytracingCameraNearPlane, hdCamera.camera.nearClipPlane);
 
-            uint currentIteration = m_SubFrameManager.iteration;
-            if (currentIteration < m_SubFrameManager.subFrameCount)
-            {
-			    // Define the shader pass to use for the path tracing pass
-                cmd.SetRayTracingShaderPass(pathTracingShader, "PathTracingDXR");
+            // Set the data for the ray generation
+            cmd.SetRayTracingTextureParam(pathTracingShader, HDShaderIDs._CameraColorTextureRW, outputTexture);
+            cmd.SetGlobalInt(HDShaderIDs._RaytracingFrameIndex, (int)m_CurrentIteration);
 
-                // Set the acceleration structure for the pass
-                cmd.SetRayTracingAccelerationStructure(pathTracingShader, HDShaderIDs._RaytracingAccelerationStructureName, accelerationStructure);
+            // Compute an approximate pixel spread angle value (in radians)
+            cmd.SetRayTracingFloatParam(pathTracingShader, HDShaderIDs._RaytracingPixelSpreadAngle, GetPixelSpreadAngle(hdCamera.camera.fieldOfView, hdCamera.actualWidth, hdCamera.actualHeight));
 
-                // Inject the ray-tracing sampling data
-                cmd.SetGlobalTexture(HDShaderIDs._OwenScrambledTexture, m_Asset.renderPipelineResources.textures.owenScrambled256Tex);
-                cmd.SetGlobalTexture(HDShaderIDs._ScramblingTexture, m_Asset.renderPipelineResources.textures.scramblingTex);
+            // LightLoop data
+            cmd.SetGlobalBuffer(HDShaderIDs._RaytracingLightCluster, lightCluster.GetCluster());
+            cmd.SetGlobalBuffer(HDShaderIDs._LightDatasRT, lightCluster.GetLightDatas());
+            cmd.SetGlobalVector(HDShaderIDs._MinClusterPos, lightCluster.GetMinClusterPos());
+            cmd.SetGlobalVector(HDShaderIDs._MaxClusterPos, lightCluster.GetMaxClusterPos());
+            cmd.SetGlobalInt(HDShaderIDs._LightPerCellCount, lightClusterSettings.maxNumLightsPercell.value);
+            cmd.SetGlobalInt(HDShaderIDs._PunctualLightCountRT, lightCluster.GetPunctualLightCount());
+            cmd.SetGlobalInt(HDShaderIDs._AreaLightCountRT, lightCluster.GetAreaLightCount());
 
-                // Inject the ray generation data
+            // Set the data for the ray miss
+            cmd.SetRayTracingIntParam(pathTracingShader, HDShaderIDs._RaytracingCameraSkyEnabled, m_CameraSkyEnabled ? 1 : 0);
+            cmd.SetRayTracingVectorParam(pathTracingShader, HDShaderIDs._RaytracingCameraClearColor, hdCamera.backgroundColorHDR);
+            cmd.SetRayTracingTextureParam(pathTracingShader, HDShaderIDs._SkyTexture, m_SkyManager.GetSkyReflection(hdCamera));
 
-                cmd.SetGlobalFloat(HDShaderIDs._RaytracingNumSamples, m_SubFrameManager.subFrameCount);
-                cmd.SetGlobalFloat(HDShaderIDs._RaytracingMinRecursion, m_PathTracingSettings.minimumDepth.value);
-                cmd.SetGlobalFloat(HDShaderIDs._RaytracingMaxRecursion, m_PathTracingSettings.maximumDepth.value);
-                cmd.SetGlobalFloat(HDShaderIDs._RaytracingIntensityClamp, m_PathTracingSettings.maximumIntensity.value);
-                cmd.SetGlobalFloat(HDShaderIDs._RaytracingRayBias, rayTracingSettings.rayBias.value);
-                cmd.SetGlobalFloat(HDShaderIDs._RaytracingCameraNearPlane, hdCamera.camera.nearClipPlane);
+            // Additional data for path tracing
+            cmd.SetRayTracingTextureParam(pathTracingShader, HDShaderIDs._AccumulatedFrameTexture, history);
+            cmd.SetRayTracingMatrixParam(pathTracingShader, HDShaderIDs._PixelCoordToViewDirWS, hdCamera.mainViewConstants.pixelCoordToViewDirWS);
 
-                // Set the data for the ray generation
-                cmd.SetGlobalInt(HDShaderIDs._RaytracingSampleIndex, (int)m_SubFrameManager.iteration);
+            // Run the computation
+            cmd.DispatchRays(pathTracingShader, "RayGen", (uint)hdCamera.actualWidth, (uint)hdCamera.actualHeight, 1);
 
-                // Compute an approximate pixel spread angle value (in radians)
-                cmd.SetRayTracingFloatParam(pathTracingShader, HDShaderIDs._RaytracingPixelSpreadAngle, GetPixelSpreadAngle(hdCamera.camera.fieldOfView, hdCamera.actualWidth, hdCamera.actualHeight));
-
-                // LightLoop data
-                cmd.SetGlobalBuffer(HDShaderIDs._RaytracingLightCluster, lightCluster.GetCluster());
-                cmd.SetGlobalBuffer(HDShaderIDs._LightDatasRT, lightCluster.GetLightDatas());
-                cmd.SetGlobalVector(HDShaderIDs._MinClusterPos, lightCluster.GetMinClusterPos());
-                cmd.SetGlobalVector(HDShaderIDs._MaxClusterPos, lightCluster.GetMaxClusterPos());
-                cmd.SetGlobalInt(HDShaderIDs._LightPerCellCount, lightClusterSettings.maxNumLightsPercell.value);
-                cmd.SetGlobalInt(HDShaderIDs._PunctualLightCountRT, lightCluster.GetPunctualLightCount());
-                cmd.SetGlobalInt(HDShaderIDs._AreaLightCountRT, lightCluster.GetAreaLightCount());
-
-                // Set the data for the ray miss
-                cmd.SetRayTracingIntParam(pathTracingShader, HDShaderIDs._RaytracingCameraSkyEnabled, m_CameraSkyEnabled ? 1 : 0);
-                cmd.SetRayTracingVectorParam(pathTracingShader, HDShaderIDs._RaytracingCameraClearColor, hdCamera.backgroundColorHDR);
-                cmd.SetRayTracingTextureParam(pathTracingShader, HDShaderIDs._SkyTexture, m_SkyManager.GetSkyReflection(hdCamera));
-
-                // Additional data for path tracing
-                cmd.SetRayTracingTextureParam(pathTracingShader, HDShaderIDs._RadianceTexture, m_RadianceTexture);
-                cmd.SetRayTracingMatrixParam(pathTracingShader, HDShaderIDs._PixelCoordToViewDirWS, hdCamera.mainViewConstants.pixelCoordToViewDirWS);
-
-                // Run the computation
-                cmd.DispatchRays(pathTracingShader, "RayGen", (uint)hdCamera.actualWidth, (uint)hdCamera.actualHeight, 1);
-            }
-            RenderAccumulation(hdCamera, cmd, m_RadianceTexture, outputTexture, true);
+            // Increment the iteration counter, if we haven't converged yet
+            if (m_CurrentIteration < m_PathTracingSettings.maximumSamples.value)
+                m_CurrentIteration++;
         }
     }
 }

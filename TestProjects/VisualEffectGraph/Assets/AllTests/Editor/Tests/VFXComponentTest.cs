@@ -144,6 +144,7 @@ namespace UnityEditor.VFX.Test
             VFXTestCommon.DeleteAllTemporaryGraph();
         }
 
+
         VFXGraph CreateGraph_And_System()
         {
             var graph = VFXTestCommon.MakeTemporaryGraph();
@@ -165,7 +166,7 @@ namespace UnityEditor.VFX.Test
             var spawner = ScriptableObject.CreateInstance<VFXBasicSpawner>();
             spawner.LinkTo(contextInitialize);
             graph.AddChild(spawner);
-            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph));;
+            AssetDatabase.ImportAsset(AssetDatabase.GetAssetPath(graph)); ;
 
             return graph;
         }
@@ -184,7 +185,7 @@ namespace UnityEditor.VFX.Test
 
             //Assert.DoesNotThrow(() => VisualEffectUtility.GetSpawnerState(vfxComponent, 0)); //N.B. : This cannot be tested after EnterPlayMode due to the closure
             int maxFrame = 512;
-            while (VisualEffectUtility.GetSpawnerState(vfxComponent, 0).totalTime < 1.0f && maxFrame-- > 0)
+            while (VisualEffectUtility.GetSpawnerState(vfxComponent, 0).totalTime < 1.0f && maxFrame-->0)
                 yield return null;
 
             Assert.GreaterOrEqual(VisualEffectUtility.GetSpawnerState(vfxComponent, 0).totalTime, 1.0f);
@@ -206,24 +207,22 @@ namespace UnityEditor.VFX.Test
         public IEnumerator CreateComponent_And_Graph_Modify_It_To_Generate_Expected_Exception()
         {
             var graph = CreateGraph_And_System();
-
             yield return null;
-
+        
             while (m_mainObject.GetComponent<VisualEffect>() != null)
                 UnityEngine.Object.DestroyImmediate(m_mainObject.GetComponent<VisualEffect>());
             var vfxComponent = m_mainObject.AddComponent<VisualEffect>();
             vfxComponent.visualEffectAsset = graph.visualEffectResource.asset;
             Assert.DoesNotThrow(() => VisualEffectUtility.GetSpawnerState(vfxComponent, 0));
-
             yield return null;
-
+        
             //Plug a GPU instruction on bounds, excepting an exception while recompiling
             var getPositionDesc = VFXLibrary.GetOperators().FirstOrDefault(o => o.modelType == typeof(VFXAttributeParameter) && o.name.Contains(VFXAttribute.Position.name));
             var getPosition = getPositionDesc.CreateInstance();
             graph.AddChild(getPosition);
             var initializeContext = graph.children.OfType<VFXBasicInitialize>().FirstOrDefault();
             Assert.AreEqual(VFXValueType.Float3, initializeContext.inputSlots[0][0].valueType);
-
+        
             getPosition.outputSlots[0].Link(initializeContext.inputSlots[0][0]);
 
             //LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("Exception while compiling expression graph:*")); < Incorrect with our katana configuration
@@ -286,9 +285,9 @@ namespace UnityEditor.VFX.Test
             vfx.visualEffectAsset = asset;
 
             int maxFrame = 512;
-            while ((vfx.culled
+            while ((    vfx.culled
                     ||  currentObject.GetComponent<VFXRenderer>().bounds.extents.x == 0.0f)
-                   &&  --maxFrame > 0)
+                    &&  --maxFrame > 0)
             {
                 yield return null;
             }
@@ -667,9 +666,9 @@ namespace UnityEditor.VFX.Test
         {
             var graph = VFXTestCommon.MakeTemporaryGraph();
             var types = Enum.GetValues(typeof(VFXValueType)).Cast<VFXValueType>()
-                .Where(e => e != VFXValueType.Spline
-                    && e != VFXValueType.Buffer             //TODO : Remove this when Buffer as exposed property is possible
-                    && e != VFXValueType.None).ToArray();
+                        .Where(e => e != VFXValueType.Spline
+                                && e != VFXValueType.Buffer //TODO : Remove this when Buffer as exposed property is possible
+                                && e != VFXValueType.None).ToArray();
 
             foreach (var type in types)
             {
@@ -1075,8 +1074,8 @@ namespace UnityEditor.VFX.Test
 
             var types = Enum.GetValues(typeof(VFXValueType)).Cast<VFXValueType>()
                 .Where(e => e != VFXValueType.Spline
-                    &&  e != VFXValueType.Buffer     //TODO : Remove this when Buffer as exposed property is possible
-                    &&  e != VFXValueType.None).ToArray();
+                        &&  e != VFXValueType.Buffer //TODO : Remove this when Buffer as exposed property is possible
+                        &&  e != VFXValueType.None).ToArray();
             foreach (var parameter in VFXLibrary.GetParameters())
             {
                 var newInstance = parameter.CreateInstance();

@@ -77,6 +77,7 @@ namespace UnityEditor.VFX.UIElements
             }
             m_EnumType = enumType;
             Add(m_DropDownButton);
+
         }
 
         protected override void ValueToGUI(bool force)

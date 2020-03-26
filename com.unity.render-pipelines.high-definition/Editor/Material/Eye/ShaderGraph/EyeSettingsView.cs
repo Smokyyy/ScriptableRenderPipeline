@@ -11,7 +11,7 @@ using UnityEngine.Rendering;
 
 namespace UnityEditor.Rendering.HighDefinition.Drawing
 {
-    class EyeSettingsView : MasterNodeSettingsView
+    class EyeSettingsView : VisualElement
     {
         EyeMasterNode m_Node;
 
@@ -27,7 +27,7 @@ namespace UnityEditor.Rendering.HighDefinition.Drawing
             return new Label(label + text);
         }
 
-        public EyeSettingsView(EyeMasterNode node) : base(node)
+        public EyeSettingsView(EyeMasterNode node)
         {
             m_Node = node;
             PropertySheet ps = new PropertySheet();
@@ -234,7 +234,6 @@ namespace UnityEditor.Rendering.HighDefinition.Drawing
             });
 
             Add(ps);
-            Add(GetShaderGUIOverridePropertySheet());
         }
 
         void ChangeSurfaceType(ChangeEvent<Enum> evt)

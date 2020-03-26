@@ -18,7 +18,7 @@ namespace UnityEditor.Rendering.Universal.ShaderGraph
                 { UniversalPasses.Meta },
                 { UniversalPasses._2D },
             },
-            customEditorOverride = "ShaderGraph.PBRMasterGUI"
+            customEditorOverride = @"CustomEditor ""UnityEditor.ShaderGraph.PBRMasterGUI""",
         };
 
         public static SubShaderDescriptor DOTSPBR
