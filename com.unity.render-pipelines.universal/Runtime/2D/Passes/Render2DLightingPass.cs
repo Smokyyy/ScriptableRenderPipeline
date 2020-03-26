@@ -117,19 +117,21 @@ namespace UnityEngine.Experimental.Rendering.Universal
                     Light2D.LightStats lightStats;
                     lightStats = Light2D.GetLightStatsByLayer(layerToRender);
 
-                    // Allocate our blend style textures
                     cmd.Clear();
                     for (int blendStyleIndex = 0; blendStyleIndex < blendStylesCount; blendStyleIndex++)
                     {
                         uint blendStyleMask = (uint)(1 << blendStyleIndex);
-                        if ((lightStats.blendStylesUsed & blendStyleMask) > 0 && !hasBeenInitialized[blendStyleIndex])
+                        bool blendStyleUsed = (lightStats.blendStylesUsed & blendStyleMask) > 0;
+
+                        if (blendStyleUsed && !hasBeenInitialized[blendStyleIndex])
                         {
                             RendererLighting.CreateBlendStyleRenderTexture(cmd, blendStyleIndex);
                             hasBeenInitialized[blendStyleIndex] = true;
                         }
+
+                        RendererLighting.EnableBlendStyle(cmd, blendStyleIndex, blendStyleUsed);
                     }
                     context.ExecuteCommandBuffer(cmd);
-
 
                     // Start Rendering
                     if (lightStats.totalNormalMapUsage > 0)
