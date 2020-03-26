@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Renderer Feature list is now redesigned to fit more closely to the Volume Profile UI, this vastly improves UX and reliability of the Renderer Features List.
 - Default color values for Lit and SimpleLit shaders changed to white due to issues with texture based workflows.
 - You can now subclass ForwardRenderer to create a custom renderer based on it.
+- URP shaders that contain a priority slider now no longer have an offset of 50 by default.
 
 ### Fixed
 - Fixed an issue where linear to sRGB conversion occurred twice on certain Android devices.
@@ -140,6 +141,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed an issue that causes viewport to not work correctly when rendering to textures. [case 1225103](https://issuetracker.unity3d.com/issues/urp-the-viewport-rect-isnt-correctly-applied-when-the-camera-is-outputting-into-a-rendertexture)
 - Fixed an issue that caused incorrect sampling of HDR reflection probe textures.
 - Fixed UI text of RenderObjects feature to display LightMode tag instead of Shader Pass Name. [case 1201696](https://issuetracker.unity3d.com/issues/render-feature-slash-pass-ui-has-a-field-for-shader-pass-name-when-it-actually-expects-shader-pass-lightmode)
+- Fixed an issue that caused transparent objects to always render over top of world space UI. [case 1219877](https://issuetracker.unity3d.com/product/unity/issues/guid/1219877/)
+- Fixed issue causing sorting fudge to not work between shadergraph and urp particle shaders. [case 1222762](https://issuetracker.unity3d.com/product/unity/issues/guid/1222762/)
 
 ## [7.1.1] - 2019-09-05
 ### Upgrade Guide
