@@ -487,6 +487,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fixed render texture with XR
 - Fixed issue with resources being accessed before initialization process has been performed completely. 
 - Half fixed shuriken particle light that cast shadows (only the first one will be correct)
+- Fixed a bug where instanced shadergraph shaders wouldn't compile on PS4.
 
 ### Changed
 - Color buffer pyramid is not allocated anymore if neither refraction nor distortion are enabled
