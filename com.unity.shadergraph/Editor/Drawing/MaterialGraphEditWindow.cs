@@ -716,8 +716,6 @@ namespace UnityEditor.ShaderGraph.Drawing
             if (m_FrameAllAfterLayout)
                 graphEditorView.graphView.FrameAll();
             m_FrameAllAfterLayout = false;
-            foreach (var node in m_GraphObject.graph.GetNodes<AbstractMaterialNode>())
-                node.Dirty(ModificationScope.Node);
         }
     }
 }
