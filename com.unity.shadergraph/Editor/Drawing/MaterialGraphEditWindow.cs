@@ -809,6 +809,8 @@ namespace UnityEditor.ShaderGraph.Drawing
 
         void OnGeometryChanged(GeometryChangedEvent evt)
         {
+            // this callback is only so we can run post-layout behaviors after the graph loads for the first time
+            // we immediately unregister it so it doesn't get called again
             graphEditorView.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             if (m_FrameAllAfterLayout)
                 graphEditorView.graphView.FrameAll();
